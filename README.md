@@ -16,7 +16,7 @@ Track mastery of bass (and other instrument) scores for OTPD repertoire at **Set
    - `#Script Resources/config.json` in the library
    - `tracker-config.json` in this project
 
-   If discovery fails, create `tracker-config.json`:
+   If discovery fails, copy `tracker-config.example.json` to `tracker-config.json` and set your paths:
    ```json
    {
      "library_root": "/path/to/OTPD Scores",
