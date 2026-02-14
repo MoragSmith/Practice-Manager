@@ -60,6 +60,22 @@ def _get_part_label(filename: str) -> Optional[str]:
     return None
 
 
+def _stem_to_base_key(stem: str, is_pdf: bool) -> str:
+    """
+    Normalize stem for PDF/WAV pairing.
+    PDFs may have instrument suffix (e.g. 'part 1 bass'); WAVs typically don't.
+    Strip instrument suffix from PDF stem to match WAV stem.
+    """
+    if not is_pdf:
+        return stem
+    lower = stem.lower()
+    for inst in INSTRUMENTS:
+        for suffix in (f"_{inst}", f" {inst}"):
+            if lower.endswith(suffix):
+                return stem[: -len(suffix)]
+    return stem
+
+
 def _discover_parts(
     parts_path: Path,
     set_id: str,
@@ -68,11 +84,11 @@ def _discover_parts(
     """
     Discover parts in Parts/ folder.
     Group by label (phrase, line, part). Within each group, sort by streak ascending.
-    Pair PDF+WAV by shared stem; log warnings on ambiguity.
+    Pair PDF+WAV by base stem (strip instrument suffix from PDF stem to match WAV).
     """
     discovered: List[Dict[str, Any]] = []
-    pdfs: Dict[str, Path] = {}
-    wavs: Dict[str, Path] = {}
+    pdfs_by_key: Dict[str, Path] = {}
+    wavs_by_key: Dict[str, Path] = {}
     
     for f in parts_path.iterdir():
         if not f.is_file():
@@ -82,25 +98,27 @@ def _discover_parts(
             continue  # Ignore files without phrase/line/part
         stem = f.stem
         if name_lower.endswith(".pdf"):
-            if stem in pdfs:
-                logger.warning("Ambiguous PDF pairing for stem %s: %s vs %s", stem, pdfs[stem], f)
-            pdfs[stem] = f
+            key = _stem_to_base_key(stem, is_pdf=True)
+            if key in pdfs_by_key:
+                logger.warning("Ambiguous PDF pairing for key %s: %s vs %s", key, pdfs_by_key[key], f)
+            pdfs_by_key[key] = f
         elif name_lower.endswith(".wav"):
-            if stem in wavs:
-                logger.warning("Ambiguous WAV pairing for stem %s: %s vs %s", stem, wavs[stem], f)
-            wavs[stem] = f
+            key = _stem_to_base_key(stem, is_pdf=False)
+            if key in wavs_by_key:
+                logger.warning("Ambiguous WAV pairing for key %s: %s vs %s", key, wavs_by_key[key], f)
+            wavs_by_key[key] = f
     
-    # Build part records: group by label, part_id = stem
+    # Build part records: group by label, part_id = display name (base key for pairing)
     by_label: Dict[str, List[Tuple[str, Path, Path]]] = {lb: [] for lb in PART_LABELS}
-    for stem in set(pdfs.keys()) | set(wavs.keys()):
-        pdf = pdfs.get(stem)
-        wav = wavs.get(stem)
+    for key in set(pdfs_by_key.keys()) | set(wavs_by_key.keys()):
+        pdf = pdfs_by_key.get(key)
+        wav = wavs_by_key.get(key)
         if not pdf or not wav:
-            logger.warning("Part %s: missing PDF or WAV pair", stem)
+            logger.warning("Part %s: missing PDF or WAV pair", key)
             continue
-        label = _get_part_label(stem)
+        label = _get_part_label(key)
         if label:
-            by_label[label].append((stem, pdf, wav))
+            by_label[label].append((key, pdf, wav))
     
     # Order: phrase, line, part. Within each, sort by streak (need items for streak)
     def streak_for(part_stem: str) -> int:

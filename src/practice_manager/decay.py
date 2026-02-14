@@ -1,8 +1,8 @@
 """
 Practice Manager - Score decay
 
-Apply decay on launch: sets and tunes only, based on last_score_updated.
-Parts do not decay.
+Apply decay on launch: tunes only (based on last_score_updated).
+Sets and parts do not decay.
 """
 
 from datetime import datetime, timezone
@@ -21,9 +21,14 @@ def _parse_iso(s: str) -> datetime:
 
 def apply_decay(data: Dict[str, Any]) -> None:
     """
-    Apply decay to all sets and tunes in-place.
+    Apply decay to tunes in-place. Sets and parts do not decay.
+
+    Formula:
     score = max(0, score - decay_rate * days_since_last_score_updated)
-    Update last_score_updated to now after applying.
+    last_score_updated is set to now after decay.
+
+    Args:
+        data: Practice status dict with items and decay_rate_percent_per_day.
     """
     now = datetime.now(timezone.utc)
     # 1% per day = subtract 1 percentage point per day (e.g. 50 -> 49 after 1 day)
@@ -31,9 +36,8 @@ def apply_decay(data: Dict[str, Any]) -> None:
     items = data.get("items", {})
     
     for item_id, rec in items.items():
-        if rec.get("type") == "part":
-            continue  # Parts do not decay
-        
+        if rec.get("type") in ("part", "set"):
+            continue  # Parts and sets do not decay; only tunes are practiced
         last_updated = rec.get("last_score_updated")
         if not last_updated:
             continue

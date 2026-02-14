@@ -14,14 +14,16 @@ from PySide6.QtWidgets import (
     QVBoxLayout,
 )
 from PySide6.QtCore import Qt
+from PySide6.QtGui import QGuiApplication
 
 
 class SessionWindow(QDialog):
     """
-    Practice session dialog.
+    Practice session dialog (stays on top, bottom-right of screen).
+
     Success: increment streak, score = (streak/10)*100 capped at 100.
     Fail: streak=0, score=0.
-    End Session: close (state is persisted on each button press).
+    End Session: close (state is persisted on each Success/Fail press).
     """
 
     def __init__(
@@ -43,6 +45,14 @@ class SessionWindow(QDialog):
         
         self.setWindowTitle(f"Practice Session - {display_name}")
         self.setModal(False)
+        self.setWindowFlags(self.windowFlags() | Qt.WindowStaysOnTopHint)
+        self.setMinimumSize(420, 200)
+        self.resize(450, 220)
+        # Tile to lower-right quadrant (bottom-right of screen)
+        screen = QGuiApplication.primaryScreen().availableGeometry()
+        w, h = 450, 220
+        mid_x = screen.x() + screen.width() // 2
+        self.move(mid_x + 20, screen.y() + screen.height() - h - 80)
         
         layout = QVBoxLayout(self)
         layout.addWidget(QLabel(f"{item_type.title()}: {display_name}"))

@@ -31,7 +31,12 @@ from ..discovery import discover
 
 
 class MainWindow(QMainWindow):
-    """Main application window with sets list and details pane."""
+    """
+    Main application window with sets list and details pane.
+
+    Left pane: instrument selector, decay rate, focus filter, sets list.
+    Right pane: selected set details (Set/Tunes/Parts) with Start Session and Reset.
+    """
 
     def __init__(
         self,
@@ -48,15 +53,15 @@ class MainWindow(QMainWindow):
         self._data = data
         self._on_save = on_save
         self._on_start_session = on_start_session
-        self._on_reset_part = on_reset_part
+        self._reset_part_cb = on_reset_part
         
-        self._focus_only = False
+        self._focus_only = self._data.get("show_focus_only", False)
         self._discovered: List[Dict[str, Any]] = []
         self._selected_set: Optional[Dict[str, Any]] = None
         
         self.setWindowTitle("Practice Manager")
-        self.setMinimumSize(800, 500)
-        self.resize(1000, 600)
+        self.setMinimumSize(1000, 650)
+        self.resize(1200, 800)
         
         self._build_ui()
         self._refresh_discovery()
@@ -95,6 +100,7 @@ class MainWindow(QMainWindow):
         left_layout.addWidget(QLabel("Sets"))
         
         self.focus_filter = QCheckBox("Show focus only")
+        self.focus_filter.setChecked(self._focus_only)
         self.focus_filter.toggled.connect(self._on_focus_filter_toggled)
         left_layout.addWidget(self.focus_filter)
         
@@ -117,7 +123,7 @@ class MainWindow(QMainWindow):
         right_layout.addWidget(self.details_scroll)
         
         splitter.addWidget(right)
-        splitter.setSizes([300, 600])
+        splitter.setSizes([350, 800])
         
         layout.addWidget(splitter)
     
@@ -131,17 +137,17 @@ class MainWindow(QMainWindow):
     
     def _on_focus_filter_toggled(self, checked: bool) -> None:
         self._focus_only = checked
+        self._data["show_focus_only"] = checked
+        self._on_save()
         self._refresh_sets_list()
     
     def _refresh_discovery(self) -> None:
         items = self._data.get("items", {})
         self._discovered = discover(self.library_root, self.data_dir, items)
         
-        # Merge new items into data
+        # Merge new tune and part items (sets are for organization only, no practice tracking)
         for set_rec in self._discovered:
             set_id = set_rec["set_id"]
-            if set_id not in items:
-                set_item(self._data, set_id, "set", 0, 0.0)
             for t in set_rec.get("tunes", []):
                 tid = t["tune_id"]
                 if tid not in items:
@@ -155,23 +161,25 @@ class MainWindow(QMainWindow):
         self.sets_list.clear()
         focus_ids = set(self._data.get("focus_set_ids", []))
         items = self._data.get("items", {})
-        
+
         for set_rec in self._discovered:
             set_id = set_rec["set_id"]
             if self._focus_only and set_id not in focus_ids:
                 continue
-            rec = get_item(self._data, set_id) or {}
-            streak = rec.get("streak", 0)
-            score = rec.get("score", 0.0)
-            missing = rec.get("missing", False)
             is_focus = set_id in focus_ids
+            
+            # Summary from tunes and parts (practice/mastery apply to these, not sets)
+            tune_ids = [t["tune_id"] for t in set_rec.get("tunes", [])]
+            part_ids = [p.get("part_full_id") or f"{set_id}|Parts|{p['part_id']}" for p in set_rec.get("parts", [])]
+            practiced = tune_ids + part_ids
+            mastered = sum(1 for iid in practiced if (items.get(iid) or {}).get("score", 0) >= 100)
+            total = len(practiced)
+            summary = f"{mastered}/{total}" if total else "—"
             
             label = set_rec["set_folder_name"]
             if is_focus:
                 label = "★ " + label
-            label += f"  [{score:.0f}% | {streak}]"
-            if missing:
-                label += " (missing)"
+            label += f"  [{summary}]"
             
             item = QListWidgetItem(label)
             item.setData(Qt.UserRole, set_rec)
@@ -201,20 +209,10 @@ class MainWindow(QMainWindow):
         items = self._data.get("items", {})
         instrument = self._data.get("focus_instrument", "bass")
         
-        # Set-level Start Session
+        # Set group: organization only (practice/mastery apply to tunes and parts)
         set_group = QGroupBox("Set")
         set_layout = QVBoxLayout(set_group)
-        set_rec_item = get_item(self._data, set_id) or {}
-        set_layout.addWidget(QLabel(f"Score: {set_rec_item.get('score', 0):.0f}% | Streak: {set_rec_item.get('streak', 0)}"))
-        tune_names = [t["tune_name"] for t in set_rec.get("tunes", [])]
-        start_set_btn = QPushButton("Start Session")
-        start_set_btn.clicked.connect(
-            lambda: self._start_session("set", set_id, set_rec["set_folder_name"], self.instrument_combo.currentText(), {
-                "set_path": set_path,
-                "tune_names": tune_names,
-            })
-        )
-        set_layout.addWidget(start_set_btn)
+        set_layout.addWidget(QLabel("Practice and mastery apply to individual tunes and parts below."))
         
         # Focus toggle
         focus_ids = list(self._data.get("focus_set_ids", []))
@@ -270,7 +268,7 @@ class MainWindow(QMainWindow):
                     })
                 )
                 reset_btn = QPushButton("Reset")
-                reset_btn.clicked.connect(lambda checked=False, part_id=pid: self._on_reset_part(part_id))
+                reset_btn.clicked.connect(lambda checked=False, part_id=pid: self._handle_reset_part(part_id))
                 row.addWidget(start_btn)
                 row.addWidget(reset_btn)
                 parts_layout.addLayout(row)
@@ -288,8 +286,9 @@ class MainWindow(QMainWindow):
     ) -> None:
         self._on_start_session(item_type, item_id, display_name, instrument, context)
     
-    def _on_reset_part(self, part_id: str) -> None:
-        self._on_reset_part(part_id)
+    def _handle_reset_part(self, part_id: str) -> None:
+        """Reset part streak and score to 0; delegate to main app callback."""
+        self._reset_part_cb(part_id)
     
     def refresh_all(self) -> None:
         """Refresh discovery and lists (e.g. after session or part reset)."""

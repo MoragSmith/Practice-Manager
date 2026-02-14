@@ -81,7 +81,12 @@ def _get_from_otpd_manager() -> Optional[Path]:
 
 
 def _get_from_script_resources(candidate_root: Path) -> Optional[Path]:
-    """Check #Script Resources/config.json for otpd_scores_directory."""
+    """
+    Check #Script Resources/config.json for otpd_scores_directory.
+
+    Used to override the library root when the config inside the library
+    points to a different location (e.g. shared library path).
+    """
     config_path = candidate_root / "#Script Resources" / "config.json"
     if not config_path.exists():
         return None
@@ -120,7 +125,15 @@ def _get_from_tracker_config() -> Optional[Path]:
 def get_library_root() -> Path:
     """
     Discover and return the OTPD Scores library root.
-    
+
+    Tries, in order:
+    1. OTPD Music Manager's paths.scores_dir (preferences.json or config/default.yaml)
+    2. #Script Resources/config.json otpd_scores_directory (if present in candidate root)
+    3. tracker-config.json library_root in project directory
+
+    Returns:
+        Path: The resolved OTPD Scores library root directory.
+
     Raises:
         FileNotFoundError: If no valid library root can be found.
     """
@@ -143,7 +156,18 @@ def get_library_root() -> Path:
 
 
 def get_data_dir(library_root: Optional[Path] = None) -> Path:
-    """Return the directory for practice_status.json (same as otpd_music_book_structure.json)."""
+    """
+    Return the directory for practice_status.json and related data files.
+
+    Uses the same location as otpd_music_book_structure.json:
+    {library_root}/#Script Resources/data
+
+    Args:
+        library_root: OTPD Scores library root. If None, uses get_library_root().
+
+    Returns:
+        Path: The data directory (e.g. .../OTPD Scores/#Script Resources/data).
+    """
     if library_root is None:
         library_root = get_library_root()
     return library_root / "#Script Resources" / "data"

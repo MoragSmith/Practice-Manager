@@ -10,13 +10,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from PySide6.QtWidgets import QApplication
+from PySide6.QtGui import QGuiApplication
 
 from src.practice_manager.config import get_library_root, get_data_dir
 from src.practice_manager.data_model import get_item, load, save, set_item
 from src.practice_manager.decay import apply_decay
 from src.practice_manager.assets import (
     get_tune_assets,
-    get_set_assets,
     get_part_assets,
     open_assets,
 )
@@ -34,10 +34,11 @@ logger = logging.getLogger(__name__)
 
 
 def main() -> None:
+    """Launch Practice Manager: discover library, load data, apply decay, show GUI."""
     app = QApplication(sys.argv)
     app.setApplicationName("Practice Manager")
-    
-    # Discover library
+
+    # Discover library (OTPD Manager config, Script Resources, or tracker-config.json)
     try:
         library_root = get_library_root()
     except FileNotFoundError as e:
@@ -64,15 +65,11 @@ def main() -> None:
         instrument: str,
         context: dict,
     ) -> None:
+        """Open PDF/WAV, persist focus_instrument, reset streak to 0, show SessionWindow."""
         pdf_path = None
         wav_path = None
-        
-        if item_type == "set":
-            set_path = context.get("set_path")
-            tune_names = context.get("tune_names", [])
-            if set_path and tune_names:
-                pdf_path, wav_path = get_set_assets(set_path, tune_names, instrument)
-        elif item_type == "tune":
+
+        if item_type == "tune":
             set_path = context.get("set_path")
             tune_name = context.get("tune_name")
             if set_path and tune_name:
@@ -83,7 +80,8 @@ def main() -> None:
                 pdf_path, wav_path = get_part_assets(part_record)
         
         if pdf_path or wav_path:
-            open_assets(pdf_path, wav_path)
+            screen = QGuiApplication.primaryScreen().availableGeometry() if QGuiApplication.primaryScreen() else None
+            open_assets(pdf_path, wav_path, screen_rect=screen)
         
         # Persist focus instrument
         data["focus_instrument"] = instrument
@@ -92,17 +90,17 @@ def main() -> None:
         # Parent context for display
         if "|" in item_id:
             parts = item_id.split("|")
-            if item_type == "set":
-                parent_context = parts[0] if len(parts) >= 1 else ""
-            elif item_type == "tune":
+            if item_type == "tune":
                 parent_context = " | ".join(parts[:2]) if len(parts) >= 2 else item_id
             else:
                 parent_context = " | ".join(parts[:2]) if len(parts) >= 2 else item_id
         else:
             parent_context = item_id
         
-        rec = get_item(data, item_id) or {}
-        streak = rec.get("streak", 0)
+        # Reset streak to 0 when starting a new session
+        set_item(data, item_id, item_type, 0, 0.0)
+        do_save()
+        streak = 0
         
         def on_success() -> None:
             nonlocal streak

@@ -31,6 +31,7 @@ def create_empty_state() -> Dict[str, Any]:
         "decay_rate_percent_per_day": DEFAULT_DECAY_RATE,
         "focus_instrument": DEFAULT_FOCUS_INSTRUMENT,
         "focus_set_ids": [],
+        "show_focus_only": False,
         "items": {},
     }
 
@@ -78,7 +79,16 @@ def _create_backup(json_path: Path, data_dir: Path) -> None:
 
 def load(data_dir: Path) -> Dict[str, Any]:
     """
-    Load practice status from JSON. Creates empty state if file doesn't exist.
+    Load practice status from practice_status.json.
+
+    Creates and returns an empty state if the file does not exist or is invalid.
+    Normalizes schema_version, decay_rate, focus_instrument, etc. to defaults.
+
+    Args:
+        data_dir: Directory containing practice_status.json.
+
+    Returns:
+        Dict with schema_version, items, focus_set_ids, etc.
     """
     json_path = data_dir / "practice_status.json"
     if not json_path.exists():
@@ -96,6 +106,7 @@ def load(data_dir: Path) -> Dict[str, Any]:
     data.setdefault("decay_rate_percent_per_day", DEFAULT_DECAY_RATE)
     data.setdefault("focus_instrument", DEFAULT_FOCUS_INSTRUMENT)
     data.setdefault("focus_set_ids", [])
+    data.setdefault("show_focus_only", False)
     data.setdefault("items", {})
     
     return data
@@ -103,7 +114,10 @@ def load(data_dir: Path) -> Dict[str, Any]:
 
 def save(data: Dict[str, Any], data_dir: Path) -> None:
     """
-    Save practice status to JSON, creating a timestamped backup first.
+    Save practice status to practice_status.json.
+
+    Creates a timestamped backup in backups/ before overwriting.
+    Updates last_updated and schema_version on the data dict.
     """
     json_path = data_dir / "practice_status.json"
     data_dir.mkdir(parents=True, exist_ok=True)

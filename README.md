@@ -1,6 +1,6 @@
 # Practice Manager
 
-Track mastery of bass (and other instrument) scores for OTPD repertoire at **Set**, **Tune**, and **Part** levels.
+Track mastery of bass (and other instrument) scores for OTPD repertoire. Content is organized by **Sets**; practice and mastery apply to **Tunes** and **Parts**.
 
 ## Setup
 
@@ -41,6 +41,7 @@ Location: `OTPD Scores/#Script Resources/data/practice_status.json`
 | decay_rate_percent_per_day | float | Default 1.0 (1% per day) |
 | focus_instrument | string | "bass", "snare", etc. |
 | focus_set_ids | array | Set IDs in focus list |
+| show_focus_only | bool | If true, show only focus sets on next launch |
 | items | object | Map of item_id → item record |
 
 **Item record:**
@@ -61,14 +62,20 @@ Location: `OTPD Scores/#Script Resources/data/practice_status.json`
 
 ## Mastery Rules
 
-- **Mastery**: 10 successes in a row
+- **Mastery**: 10 successes in a row (for tunes and parts only)
 - **Score**: `(streak / 10) * 100` after each practice, capped at 100
-- **Decay**: Sets and tunes decay at configurable rate (default 1%/day); parts do not decay
+- **Decay**: Tunes decay at configurable rate (default 1%/day); sets and parts do not decay
 - **Reset Part**: Manual action sets streak and score to 0 for that part only
+
+## Known Gaps / Future Work
+
+- **Missing items**: The schema supports `missing: true` for renamed/removed items, and the UI shows "(missing)" in the sets list. Nothing currently *sets* items as missing; that logic (comparing discovered IDs vs stored items) is not implemented.
+- **widgets.py**: Placeholder module for future shared UI components; unused.
+- **Windows/Linux**: PDF/WAV open via `os.startfile`/`xdg-open`. macOS-only features (Acrobat left-half tiling, Music mini player, session bottom-right layout) do not apply.
 
 ## Tests
 
-Activate shared-dev-env first, then:
+Activate shared-dev-env first, then (from project root):
 ```bash
 pytest tests/ -v
 ```
