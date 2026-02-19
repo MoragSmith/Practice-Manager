@@ -60,6 +60,42 @@ def _get_part_label(filename: str) -> Optional[str]:
     return None
 
 
+def _short_part_label(full_part_id: str) -> str:
+    """
+    Extract short display name from full part_id.
+    e.g. "Competition 08 - Prince Charles Welcome to Lochaber line 1" -> "line 1"
+    """
+    lower = full_part_id.lower()
+    for lb in PART_LABELS:
+        idx = lower.find(f" {lb}")
+        if idx >= 0:
+            return full_part_id[idx + 1 :].strip()
+    return full_part_id
+
+
+def _assign_part_to_tune(
+    part_id: str,
+    tune_names: List[str],
+    set_id: str,
+    set_folder_name: str,
+) -> Tuple[Optional[str], str]:
+    """
+    Assign part to a tune by longest prefix match.
+    Returns (tune_id, tune_name). Uses set_folder_name when no tunes or no match.
+    """
+    if not tune_names:
+        return (f"{set_id}|{set_folder_name}", set_folder_name)
+    best_tune: Optional[str] = None
+    best_len = 0
+    for t in tune_names:
+        if part_id.startswith(t) and len(t) > best_len:
+            best_tune = t
+            best_len = len(t)
+    if best_tune:
+        return (f"{set_id}|{best_tune}", best_tune)
+    return (f"{set_id}|{set_folder_name}", set_folder_name)
+
+
 def _stem_to_base_key(stem: str, is_pdf: bool) -> str:
     """
     Normalize stem for PDF/WAV pairing.
@@ -100,12 +136,12 @@ def _discover_parts(
         if name_lower.endswith(".pdf"):
             key = _stem_to_base_key(stem, is_pdf=True)
             if key in pdfs_by_key:
-                logger.warning("Ambiguous PDF pairing for key %s: %s vs %s", key, pdfs_by_key[key], f)
+                logger.debug("Multiple instrument PDFs for key %s (using %s)", key, f.name)
             pdfs_by_key[key] = f
         elif name_lower.endswith(".wav"):
             key = _stem_to_base_key(stem, is_pdf=False)
             if key in wavs_by_key:
-                logger.warning("Ambiguous WAV pairing for key %s: %s vs %s", key, wavs_by_key[key], f)
+                logger.debug("Multiple WAVs for key %s (using %s)", key, f.name)
             wavs_by_key[key] = f
     
     # Build part records: group by label, part_id = display name (base key for pairing)
@@ -114,7 +150,7 @@ def _discover_parts(
         pdf = pdfs_by_key.get(key)
         wav = wavs_by_key.get(key)
         if not pdf or not wav:
-            logger.warning("Part %s: missing PDF or WAV pair", key)
+            logger.debug("Part %s: missing PDF or WAV pair (orphaned file)", key)
             continue
         label = _get_part_label(key)
         if label:
@@ -133,6 +169,7 @@ def _discover_parts(
         for stem, pdf_path, wav_path in parts_in_label:
             discovered.append({
                 "part_id": stem,
+                "short_label": _short_part_label(stem),
                 "label": label,
                 "pdf_path": pdf_path,
                 "wav_path": wav_path,
@@ -201,14 +238,22 @@ def discover(
                 for tune_name in inferred:
                     tune_id = f"{set_id}|{tune_name}"
                     tunes.append({"tune_name": tune_name, "tune_id": tune_id})
+            # Single-tune sets (e.g. competition): if no tunes, add set folder as tune for "practice complete"
+            if not tunes:
+                tune_id = f"{set_id}|{set_folder_name}"
+                tunes.append({"tune_name": set_folder_name, "tune_id": tune_id})
             
             # Parts from Parts/ subfolder
             parts: List[Dict[str, Any]] = []
             parts_dir = set_path / "Parts"
             if parts_dir.is_dir():
                 parts = _discover_parts(parts_dir, set_id, items)
+                tune_names = [t["tune_name"] for t in tunes]
                 for p in parts:
                     p["part_full_id"] = f"{set_id}|Parts|{p['part_id']}"
+                    p["tune_id"], p["tune_name"] = _assign_part_to_tune(
+                        p["part_id"], tune_names, set_id, set_folder_name
+                    )
             
             result.append({
                 "section_name": section_name,

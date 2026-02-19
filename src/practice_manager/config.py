@@ -155,6 +155,71 @@ def get_library_root() -> Path:
     )
 
 
+def get_ensemble_config() -> dict:
+    """
+    Load Ensemble credentials and paths from OTPD Music Manager config.
+
+    Returns dict with username, password, downloads_dir, scores_dir.
+    Username/password from: .env (OTPD or Practice Manager), env vars, or config.
+    """
+    import os
+
+    project_root = _get_project_root()
+    tracker_config_path = project_root / "tracker-config.json"
+    otpd_path: Optional[Path] = None
+    if tracker_config_path.exists():
+        try:
+            with open(tracker_config_path) as f:
+                data = json.load(f)
+                p = data.get("otpd_manager_path")
+                if p:
+                    otpd_path = Path(p).expanduser()
+        except Exception:
+            pass
+
+    # Load .env from OTPD Music Manager or Practice Manager (for ENSEMBLE_USERNAME/PASSWORD)
+    try:
+        from dotenv import load_dotenv
+        if otpd_path and otpd_path.exists():
+            load_dotenv(otpd_path / ".env")
+        load_dotenv(project_root / ".env")
+    except ImportError:
+        pass
+
+    result: dict = {
+        "username": os.environ.get("ENSEMBLE_USERNAME"),
+        "password": os.environ.get("ENSEMBLE_PASSWORD"),
+        "downloads_dir": None,
+        "scores_dir": None,
+    }
+
+    if otpd_path and otpd_path.exists():
+        config_path = otpd_path / "config" / "default.yaml"
+        if config_path.exists():
+            data = _load_yaml_safe(config_path)
+            if data:
+                paths = data.get("paths", {})
+                if paths.get("downloads_dir"):
+                    result["downloads_dir"] = str(Path(paths["downloads_dir"]).expanduser())
+                if paths.get("scores_dir"):
+                    result["scores_dir"] = str(Path(paths["scores_dir"]).expanduser())
+                ensemble = data.get("ensemble", {})
+                if not result["username"] and ensemble.get("username"):
+                    result["username"] = ensemble["username"]
+                if not result["password"] and ensemble.get("password"):
+                    result["password"] = ensemble["password"]
+
+    if result["downloads_dir"] is None:
+        result["downloads_dir"] = str(Path.home() / "Downloads")
+    if result["scores_dir"] is None:
+        try:
+            result["scores_dir"] = str(get_library_root())
+        except FileNotFoundError:
+            pass
+
+    return result
+
+
 def get_data_dir(library_root: Optional[Path] = None) -> Path:
     """
     Return the directory for practice_status.json and related data files.

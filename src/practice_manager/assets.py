@@ -28,28 +28,45 @@ def get_tune_assets(
     Get (pdf_path, wav_path) for a tune.
     WAV: complete tune (no instrument suffix).
     PDF: instrument-specific (e.g. _bass.pdf).
+    Checks set_path first (complete tune often in set folder), then set_path/Parts/ as fallback.
+    If tune_name finds nothing, tries set_folder_name (set_path.name) - common for single-tune sets.
     """
-    # WAV: complete tune
-    wav_complete = set_path / f"{tune_name}.wav"
-    if wav_complete.exists():
-        wav_path = wav_complete
-    else:
-        # Fallback: instrument WAV
-        wav_instr = set_path / f"{tune_name}_{instrument}.wav"
-        if wav_instr.exists():
-            wav_path = wav_instr
-            logger.warning("No complete WAV for %s, using instrument WAV", tune_name)
-        else:
-            wav_path = None
-    
-    # PDF: instrument-specific
-    pdf_instr = set_path / f"{tune_name}_{instrument}.pdf"
-    if pdf_instr.exists():
-        pdf_path = pdf_instr
-    else:
-        pdf_complete = set_path / f"{tune_name}.pdf"
-        pdf_path = pdf_complete if pdf_complete.exists() else None
-    
+    set_path = Path(set_path).resolve()
+    set_folder_name = set_path.name
+
+    def _find_wav(name: str) -> Optional[Path]:
+        for base in (set_path, set_path / "Parts"):
+            p = base / f"{name}.wav"
+            if p.exists():
+                return p
+        for base in (set_path, set_path / "Parts"):
+            p = base / f"{name}_{instrument}.wav"
+            if p.exists():
+                logger.warning("No complete WAV for %s, using instrument WAV", name)
+                return p
+        return None
+
+    def _find_pdf(name: str) -> Optional[Path]:
+        for base in (set_path, set_path / "Parts"):
+            p = base / f"{name}_{instrument}.pdf"
+            if p.exists():
+                return p
+        for base in (set_path, set_path / "Parts"):
+            p = base / f"{name}.pdf"
+            if p.exists():
+                return p
+        return None
+
+    wav_path = _find_wav(tune_name)
+    pdf_path = _find_pdf(tune_name)
+    if (not wav_path or not pdf_path) and tune_name != set_folder_name:
+        wav_path = wav_path or _find_wav(set_folder_name)
+        pdf_path = pdf_path or _find_pdf(set_folder_name)
+    if not wav_path:
+        logger.warning(
+            "No WAV found for tune %r in %s (tried %s.wav, %s.wav)",
+            tune_name, set_path, tune_name, set_folder_name,
+        )
     return (pdf_path, wav_path)
 
 
@@ -69,9 +86,24 @@ def get_set_assets(
     return get_tune_assets(set_path, tune_names[0], instrument)
 
 
-def get_part_assets(part_record: dict) -> Tuple[Path, Path]:
-    """Get (pdf_path, wav_path) from a discovered part record."""
-    return (part_record["pdf_path"], part_record["wav_path"])
+def get_part_assets(
+    part_record: dict,
+    instrument: str,
+) -> Tuple[Optional[Path], Optional[Path]]:
+    """
+    Get (pdf_path, wav_path) from a discovered part record.
+    Prefers instrument-specific PDF (e.g. {part_id}_bass.pdf) when it exists.
+    """
+    parts_dir = part_record["pdf_path"].parent
+    part_id = part_record["part_id"]
+    wav_path = part_record["wav_path"]
+
+    # Prefer instrument-specific PDF
+    pdf_instr = parts_dir / f"{part_id}_{instrument}.pdf"
+    if pdf_instr.exists():
+        return (pdf_instr, wav_path)
+    # Fallback: stored PDF (may be a different instrument)
+    return (part_record["pdf_path"], wav_path)
 
 
 def open_file(path: Path, app: Optional[str] = None) -> None:
@@ -94,6 +126,12 @@ def open_file(path: Path, app: Optional[str] = None) -> None:
             subprocess.run(["xdg-open", str(path)], check=True)
     except Exception as e:
         logger.error("Failed to open %s: %s", path, e)
+
+
+def close_music_app() -> None:
+    """Quit the Music app (macOS). No-op on other platforms."""
+    if platform.system() == "Darwin":
+        _run_applescript('tell application "Music" to quit')
 
 
 def _run_applescript(script: str) -> bool:
@@ -190,10 +228,12 @@ def open_assets(
             time.sleep(0.5)
         if wav_path:
             open_file(wav_path, app="Music")
-            time.sleep(0.8)
-            # Loop the current track (repeat one)
+            # Allow Music to load the file and establish current track (longer for cloud/network paths)
+            time.sleep(1.5)
+            _run_applescript('tell application "Music" to play')
+            time.sleep(0.3)
             _run_applescript('tell application "Music" to set song repeat to one')
-            # Switch to Mini Player only via Window menu
+            # Switch to Mini Player (can reset repeat, so we re-apply after)
             _run_applescript(
                 'tell application "Music" to activate\n'
                 'delay 0.5\n'
@@ -205,7 +245,9 @@ def open_assets(
                 'delay 0.5\n'
                 'tell application "Music" to activate'
             )
-            time.sleep(0.3)
+            time.sleep(0.4)
+            _run_applescript('tell application "Music" to set song repeat to one')
+            time.sleep(0.2)
         if screen_rect and (pdf_path or wav_path):
             _arrange_macos_windows(
                 screen_rect.x(), screen_rect.y(),

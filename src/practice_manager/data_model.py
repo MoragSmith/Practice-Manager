@@ -30,6 +30,7 @@ def create_empty_state() -> Dict[str, Any]:
         "last_updated": _now_iso(),
         "decay_rate_percent_per_day": DEFAULT_DECAY_RATE,
         "focus_instrument": DEFAULT_FOCUS_INSTRUMENT,
+        "set_instruments": {},  # set_id -> instrument (per-set override)
         "focus_set_ids": [],
         "show_focus_only": False,
         "items": {},
@@ -105,6 +106,7 @@ def load(data_dir: Path) -> Dict[str, Any]:
     data.setdefault("schema_version", SCHEMA_VERSION)
     data.setdefault("decay_rate_percent_per_day", DEFAULT_DECAY_RATE)
     data.setdefault("focus_instrument", DEFAULT_FOCUS_INSTRUMENT)
+    data.setdefault("set_instruments", {})
     data.setdefault("focus_set_ids", [])
     data.setdefault("show_focus_only", False)
     data.setdefault("items", {})

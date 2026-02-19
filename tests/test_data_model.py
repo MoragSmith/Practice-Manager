@@ -21,6 +21,7 @@ def test_create_empty_state() -> None:
     assert "items" in state
     assert state["focus_set_ids"] == []
     assert state["focus_instrument"] == "bass"
+    assert state["set_instruments"] == {}
 
 
 def test_create_item() -> None:

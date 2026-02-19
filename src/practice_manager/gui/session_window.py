@@ -36,12 +36,14 @@ class SessionWindow(QDialog):
         on_success: Callable[[], None],
         on_fail: Callable[[], None],
         get_streak: Callable[[], int],
+        on_end_session: Optional[Callable[[], None]] = None,
     ):
         super().__init__()
         self._item_id = item_id
         self._on_success = on_success
         self._on_fail = on_fail
         self._get_streak = get_streak
+        self._on_end_session = on_end_session
         
         self.setWindowTitle(f"Practice Session - {display_name}")
         self.setModal(False)
@@ -67,7 +69,7 @@ class SessionWindow(QDialog):
         fail_btn = QPushButton("Fail")
         fail_btn.clicked.connect(self._do_fail)
         end_btn = QPushButton("End Session")
-        end_btn.clicked.connect(self.close)
+        end_btn.clicked.connect(self._do_end_session)
         
         btn_row.addWidget(success_btn)
         btn_row.addWidget(fail_btn)
@@ -81,7 +83,12 @@ class SessionWindow(QDialog):
     def _do_fail(self) -> None:
         self._on_fail()
         self._refresh_streak()
-    
+
+    def _do_end_session(self) -> None:
+        if self._on_end_session:
+            self._on_end_session()
+        self.close()
+
     def _refresh_streak(self) -> None:
         self.streak_label.setText(f"Current streak: {self._get_streak()}")
     

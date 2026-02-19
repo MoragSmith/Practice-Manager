@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from ..config import INSTRUMENTS
+from ..config import INSTRUMENTS, PART_LABELS
 from ..data_model import get_item, set_item
 from ..discovery import discover
 
@@ -72,17 +72,7 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
         
-        # Instrument selector (global, for session start)
         inst_row = QHBoxLayout()
-        inst_row.addWidget(QLabel("Focus instrument:"))
-        self.instrument_combo = QComboBox()
-        self.instrument_combo.addItems(INSTRUMENTS)
-        current = self._data.get("focus_instrument", "bass")
-        idx = self.instrument_combo.findText(current)
-        if idx >= 0:
-            self.instrument_combo.setCurrentIndex(idx)
-        self.instrument_combo.currentTextChanged.connect(self._on_instrument_changed)
-        inst_row.addWidget(self.instrument_combo)
         inst_row.addWidget(QLabel("Decay %/day:"))
         self.decay_spin = QDoubleSpinBox()
         self.decay_spin.setRange(0.0, 10.0)
@@ -90,6 +80,10 @@ class MainWindow(QMainWindow):
         self.decay_spin.setValue(self._data.get("decay_rate_percent_per_day", 1.0))
         self.decay_spin.valueChanged.connect(self._on_decay_changed)
         inst_row.addWidget(self.decay_spin)
+        self.download_parts_btn = QPushButton("Download Parts")
+        self.download_parts_btn.setToolTip("Download all parts from Ensemble Parts workspace (WAV + PDFs)")
+        self.download_parts_btn.clicked.connect(self._on_download_parts)
+        inst_row.addWidget(self.download_parts_btn)
         layout.addLayout(inst_row)
         
         splitter = QSplitter(Qt.Horizontal)
@@ -126,10 +120,6 @@ class MainWindow(QMainWindow):
         splitter.setSizes([350, 800])
         
         layout.addWidget(splitter)
-    
-    def _on_instrument_changed(self, text: str) -> None:
-        self._data["focus_instrument"] = text
-        self._on_save()
     
     def _on_decay_changed(self, value: float) -> None:
         self._data["decay_rate_percent_per_day"] = value
@@ -207,12 +197,31 @@ class MainWindow(QMainWindow):
         set_id = set_rec["set_id"]
         set_path = set_rec["set_path"]
         items = self._data.get("items", {})
-        instrument = self._data.get("focus_instrument", "bass")
+        set_instruments = self._data.get("set_instruments", {})
+        default_inst = self._data.get("focus_instrument", "bass")
+        instrument = set_instruments.get(set_id, default_inst)
         
         # Set group: organization only (practice/mastery apply to tunes and parts)
         set_group = QGroupBox("Set")
         set_layout = QVBoxLayout(set_group)
         set_layout.addWidget(QLabel("Practice and mastery apply to individual tunes and parts below."))
+        
+        # Per-set instrument selector
+        inst_row = QHBoxLayout()
+        inst_row.addWidget(QLabel("Instrument for this set:"))
+        inst_combo = QComboBox()
+        inst_combo.addItems(INSTRUMENTS)
+        idx = inst_combo.findText(instrument)
+        if idx >= 0:
+            inst_combo.setCurrentIndex(idx)
+        def _on_set_instrument_changed(text: str) -> None:
+            si = dict(self._data.get("set_instruments", {}))
+            si[set_id] = text
+            self._data["set_instruments"] = si
+            self._on_save()
+        inst_combo.currentTextChanged.connect(_on_set_instrument_changed)
+        inst_row.addWidget(inst_combo)
+        set_layout.addLayout(inst_row)
         
         # Focus toggle
         focus_ids = list(self._data.get("focus_set_ids", []))
@@ -242,8 +251,9 @@ class MainWindow(QMainWindow):
             row.addWidget(QLabel(f"{tune_name}: {rec.get('score', 0):.0f}% | {rec.get('streak', 0)}"))
             btn = QPushButton("Start Session")
             btn.clicked.connect(
-                lambda checked=False, tid=tune_id, tname=tune_name: self._start_session("tune", tid, tname, self.instrument_combo.currentText(), {
+                lambda checked=False, tid=tune_id, tname=tune_name, combo=inst_combo: self._start_session("tune", tid, tname, combo.currentText(), {
                     "set_path": set_path,
+                    "set_id": set_id,
                     "tune_name": tname,
                 })
             )
@@ -251,27 +261,59 @@ class MainWindow(QMainWindow):
             tunes_layout.addLayout(row)
         self.details_layout.addWidget(tunes_group)
         
-        # Parts (if any)
+        # Parts (if any): group by tune, then by phrase/line/part
         parts_list = set_rec.get("parts", [])
         if parts_list:
             parts_group = QGroupBox("Parts")
             parts_layout = QVBoxLayout(parts_group)
+            # Group parts by tune_id, then by label (phrase, line, part)
+            by_tune: Dict[str, Dict[str, list]] = {}
             for p in parts_list:
-                pid = p.get("part_full_id") or f"{set_id}|Parts|{p['part_id']}"
-                rec = get_item(self._data, pid) or {}
-                row = QHBoxLayout()
-                row.addWidget(QLabel(f"{p['part_id']} ({p['label']}): {rec.get('score', 0):.0f}% | {rec.get('streak', 0)}"))
-                start_btn = QPushButton("Start Session")
-                start_btn.clicked.connect(
-                    lambda checked=False, part_id=pid, prec=p: self._start_session("part", part_id, p["part_id"], self.instrument_combo.currentText(), {
-                        "part_record": prec,
-                    })
-                )
-                reset_btn = QPushButton("Reset")
-                reset_btn.clicked.connect(lambda checked=False, part_id=pid: self._handle_reset_part(part_id))
-                row.addWidget(start_btn)
-                row.addWidget(reset_btn)
-                parts_layout.addLayout(row)
+                tid = p.get("tune_id") or ""
+                tname = p.get("tune_name") or "Parts"
+                lbl = p.get("label") or "part"
+                if tid not in by_tune:
+                    by_tune[tid] = {"tune_name": tname, "phrase": [], "line": [], "part": []}
+                if lbl in by_tune[tid]:
+                    by_tune[tid][lbl].append(p)
+            # Order tunes: use set's tune order; unmapped parts at end
+            tune_order = [t["tune_id"] for t in set_rec.get("tunes", [])]
+            ordered_tune_ids = []
+            for tid in tune_order:
+                if tid in by_tune and tid not in ordered_tune_ids:
+                    ordered_tune_ids.append(tid)
+            for tid in by_tune:
+                if tid not in ordered_tune_ids:
+                    ordered_tune_ids.append(tid)
+            for tid in ordered_tune_ids:
+                if tid not in by_tune:
+                    continue
+                tdata = by_tune[tid]
+                tname = tdata["tune_name"]
+                tune_label = QLabel(f"<b>{tname}</b>")
+                parts_layout.addWidget(tune_label)
+                for lbl in PART_LABELS:
+                    plist = tdata.get(lbl, [])
+                    if not plist:
+                        continue
+                    for p in plist:
+                        pid = p.get("part_full_id") or f"{set_id}|Parts|{p['part_id']}"
+                        rec = get_item(self._data, pid) or {}
+                        row = QHBoxLayout()
+                        display = p.get("short_label") or p["part_id"]
+                        row.addWidget(QLabel(f"  {display} ({p['label']}): {rec.get('score', 0):.0f}% | {rec.get('streak', 0)}"))
+                        start_btn = QPushButton("Start Session")
+                        start_btn.clicked.connect(
+                            lambda checked=False, part_id=pid, prec=p, combo=inst_combo: self._start_session("part", part_id, p.get("short_label") or p["part_id"], combo.currentText(), {
+                                "part_record": prec,
+                                "set_id": set_id,
+                            })
+                        )
+                        reset_btn = QPushButton("Reset")
+                        reset_btn.clicked.connect(lambda checked=False, part_id=pid: self._handle_reset_part(part_id))
+                        row.addWidget(start_btn)
+                        row.addWidget(reset_btn)
+                        parts_layout.addLayout(row)
             self.details_layout.addWidget(parts_group)
         
         self.details_layout.addStretch()
@@ -286,6 +328,14 @@ class MainWindow(QMainWindow):
     ) -> None:
         self._on_start_session(item_type, item_id, display_name, instrument, context)
     
+    def _on_download_parts(self) -> None:
+        """Open Download Parts dialog and start workflow."""
+        from .download_parts_dialog import DownloadPartsDialog
+
+        dlg = DownloadPartsDialog(self)
+        dlg.start()
+        dlg.exec()
+
     def _handle_reset_part(self, part_id: str) -> None:
         """Reset part streak and score to 0; delegate to main app callback."""
         self._reset_part_cb(part_id)

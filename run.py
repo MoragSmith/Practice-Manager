@@ -16,6 +16,7 @@ from src.practice_manager.config import get_library_root, get_data_dir
 from src.practice_manager.data_model import get_item, load, save, set_item
 from src.practice_manager.decay import apply_decay
 from src.practice_manager.assets import (
+    close_music_app,
     get_tune_assets,
     get_part_assets,
     open_assets,
@@ -77,14 +78,19 @@ def main() -> None:
         elif item_type == "part":
             part_record = context.get("part_record")
             if part_record:
-                pdf_path, wav_path = get_part_assets(part_record)
+                pdf_path, wav_path = get_part_assets(part_record, instrument)
         
         if pdf_path or wav_path:
             screen = QGuiApplication.primaryScreen().availableGeometry() if QGuiApplication.primaryScreen() else None
             open_assets(pdf_path, wav_path, screen_rect=screen)
         
-        # Persist focus instrument
-        data["focus_instrument"] = instrument
+        # Persist instrument for this set (and default for new sets)
+        set_id = context.get("set_id")
+        if set_id:
+            si = dict(data.get("set_instruments", {}))
+            si[set_id] = instrument
+            data["set_instruments"] = si
+        data["focus_instrument"] = instrument  # default for sets without override
         do_save()
         
         # Parent context for display
@@ -146,6 +152,7 @@ def main() -> None:
             on_success=on_success,
             on_fail=on_fail,
             get_streak=get_streak,
+            on_end_session=close_music_app,
         )
         sw.show()
     
