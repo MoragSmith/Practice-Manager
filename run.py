@@ -9,18 +9,12 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from PySide6.QtWidgets import QApplication
-from PySide6.QtGui import QGuiApplication
+from PySide6.QtWidgets import QApplication, QMessageBox
 
 from src.practice_manager.config import get_library_root, get_data_dir
 from src.practice_manager.data_model import get_item, load, save, set_item
 from src.practice_manager.decay import apply_decay
-from src.practice_manager.assets import (
-    close_music_app,
-    get_tune_assets,
-    get_part_assets,
-    open_assets,
-)
+from src.practice_manager.assets import get_tune_assets, get_part_assets
 from src.practice_manager.gui.main_window import MainWindow
 from src.practice_manager.gui.session_window import SessionWindow
 
@@ -67,6 +61,7 @@ def main() -> None:
         context: dict,
     ) -> None:
         """Open PDF/WAV, persist focus_instrument, reset streak to 0, show SessionWindow."""
+        logger.info("Starting session: %s %s", item_type, display_name)
         pdf_path = None
         wav_path = None
 
@@ -79,10 +74,6 @@ def main() -> None:
             part_record = context.get("part_record")
             if part_record:
                 pdf_path, wav_path = get_part_assets(part_record, instrument)
-        
-        if pdf_path or wav_path:
-            screen = QGuiApplication.primaryScreen().availableGeometry() if QGuiApplication.primaryScreen() else None
-            open_assets(pdf_path, wav_path, screen_rect=screen)
         
         # Persist instrument for this set (and default for new sets)
         set_id = context.get("set_id")
@@ -143,18 +134,29 @@ def main() -> None:
             r = get_item(data, item_id) or {}
             return r.get("streak", 0)
         
-        sw = SessionWindow(
-            item_type=item_type,
-            item_id=item_id,
-            display_name=display_name,
-            parent_context=parent_context,
-            initial_streak=streak,
-            on_success=on_success,
-            on_fail=on_fail,
-            get_streak=get_streak,
-            on_end_session=close_music_app,
-        )
-        sw.show()
+        try:
+            sw = SessionWindow(
+                item_type=item_type,
+                item_id=item_id,
+                display_name=display_name,
+                parent_context=parent_context,
+                initial_streak=streak,
+                pdf_path=pdf_path,
+                wav_path=wav_path,
+                on_success=on_success,
+                on_fail=on_fail,
+                get_streak=get_streak,
+            )
+            sw.show()
+            sw.raise_()
+            sw.activateWindow()
+        except Exception as e:
+            logger.exception("Failed to open session window")
+            QMessageBox.critical(
+                main_win,
+                "Session Error",
+                f"Could not open practice session:\n{e}",
+            )
     
     def do_reset_part(part_id: str) -> None:
         set_item(data, part_id, "part", 0, 0.0)

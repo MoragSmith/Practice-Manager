@@ -9,7 +9,7 @@ Track mastery of bass (and other instrument) scores for OTPD repertoire. Content
    source "/Users/moragsmith/Smith-Parkes Dropbox/Morag Smith/Home/Computer/Scripts/shared-dev-env/bin/activate"
    ```
    Or run `activate_shared_dev.sh` from the Scripts directory.  
-   Practice Manager requires PySide6, PyYAML, playwright, and pypdf. Install with:
+   Practice Manager requires PySide6, PyYAML, playwright, pypdf, and PyMuPDF. Install with:
    ```bash
    pip install -r requirements.txt
    playwright install chromium
@@ -74,7 +74,7 @@ Location: `OTPD Scores/#Script Resources/data/practice_status.json`
 - **Instrument**: Set per set (bass, snare, bagpipes, etc.) in the Set details pane
 - **Parts grouping**: Parts are grouped by tune, then by phrase → line → part
 - **Single-tune sets**: Competition-style sets without explicit tunes show a "practice complete tune" option
-- **End Session**: Closes the Music app and session dialog
+- **Integrated session window**: Single window with PDF on the left, WAV player (upper right), and Success/Fail/End Session buttons (lower right). No external Acrobat or Music app.
 
 ## Mastery Rules
 
@@ -99,7 +99,6 @@ Files are organized into `set_folder/Parts/` using the prefix in filenames (e.g.
 
 - **Missing items**: The schema supports `missing: true` for renamed/removed items, and the UI shows "(missing)" in the sets list. Nothing currently *sets* items as missing; that logic (comparing discovered IDs vs stored items) is not implemented.
 - **widgets.py**: Placeholder module for future shared UI components; unused.
-- **Windows/Linux**: PDF/WAV open via `os.startfile`/`xdg-open`. macOS-only features (Acrobat left-half tiling, Music mini player, session bottom-right layout) do not apply.
 
 ## Tests
 
