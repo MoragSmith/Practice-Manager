@@ -3,3 +3,16 @@ __pycache__/
 .pytest_cache/
 *.egg-info/
 tracker-config.json
+
+# Machine-room transient zones (if/when introduced)
+/logs/
+/tmp/
+/runtime/
+/generated/
+/backup/
+
+# Common transient residue
+*.log
+*.tmp
+*.bak
+*.old
