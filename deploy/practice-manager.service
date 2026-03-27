@@ -1,0 +1,28 @@
+# Systemd service for Practice Manager web app
+# Install: sudo cp practice-manager.service /etc/systemd/system/
+#         sudo systemctl daemon-reload
+#         sudo systemctl enable practice-manager
+#         sudo systemctl start practice-manager
+#
+# Replace YOUR_USERNAME with your Linux username (run: whoami)
+# Replace /path/to/OTPD Scores with your rclone mount path (e.g. /mnt/otpd-scores)
+
+[Unit]
+Description=Practice Manager Web
+After=network.target
+
+[Service]
+Type=simple
+User=moragsmith
+WorkingDirectory=/home/moragsmith/Practice-Manager
+Environment="LIBRARY_ROOT=/mnt/otpd-scores"
+Environment="PATH=/home/moragsmith/Practice-Manager/venv/bin"
+# Optional: password protection (uncomment and set)
+# Environment="AUTH_USERNAME=your_username"
+# Environment="AUTH_PASSWORD=your_password"
+ExecStart=/home/moragsmith/Practice-Manager/venv/bin/uvicorn src.practice_manager.web.main:app --host 0.0.0.0 --port 8000
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

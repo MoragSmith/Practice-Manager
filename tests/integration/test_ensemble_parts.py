@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-from src.practice_manager.config import get_ensemble_config, get_library_root
+from src.practice_manager.core import get_ensemble_config, get_library_root
 from src.practice_manager.ensemble.download_parts_workflow import run_download_parts
 
 

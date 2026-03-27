@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src.practice_manager.data_model import (
+from src.practice_manager.core.data_model import (
     create_empty_state,
     create_item,
     get_item,

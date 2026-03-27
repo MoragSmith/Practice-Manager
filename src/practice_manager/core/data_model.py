@@ -94,14 +94,14 @@ def load(data_dir: Path) -> Dict[str, Any]:
     json_path = data_dir / "practice_status.json"
     if not json_path.exists():
         return create_empty_state()
-    
+
     try:
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
         logger.error("Invalid JSON in practice_status.json: %s", e)
         return create_empty_state()
-    
+
     # Normalize schema version
     data.setdefault("schema_version", SCHEMA_VERSION)
     data.setdefault("decay_rate_percent_per_day", DEFAULT_DECAY_RATE)
@@ -110,7 +110,7 @@ def load(data_dir: Path) -> Dict[str, Any]:
     data.setdefault("focus_set_ids", [])
     data.setdefault("show_focus_only", False)
     data.setdefault("items", {})
-    
+
     return data
 
 
@@ -123,12 +123,12 @@ def save(data: Dict[str, Any], data_dir: Path) -> None:
     """
     json_path = data_dir / "practice_status.json"
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     data["last_updated"] = _now_iso()
     data["schema_version"] = SCHEMA_VERSION
-    
+
     _create_backup(json_path, data_dir)
-    
+
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 

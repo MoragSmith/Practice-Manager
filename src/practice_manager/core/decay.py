@@ -34,24 +34,24 @@ def apply_decay(data: Dict[str, Any]) -> None:
     # 1% per day = subtract 1 percentage point per day (e.g. 50 -> 49 after 1 day)
     rate = data.get("decay_rate_percent_per_day", 1.0)
     items = data.get("items", {})
-    
+
     for item_id, rec in items.items():
         if rec.get("type") in ("part", "set"):
             continue  # Parts and sets do not decay; only tunes are practiced
         last_updated = rec.get("last_score_updated")
         if not last_updated:
             continue
-        
+
         try:
             last_dt = _parse_iso(last_updated)
         except Exception:
             continue
-        
+
         delta = now - last_dt
         days = max(0, delta.total_seconds() / 86400)
         if days <= 0:
             continue
-        
+
         score = rec.get("score", 0.0)
         decay_amount = rate * days  # percentage points
         decayed = max(0.0, score - decay_amount)

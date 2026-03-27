@@ -1,0 +1,6 @@
+# Minimal deps for web server only (no PySide6, playwright, PyMuPDF)
+# Use on memory-constrained VMs (e.g. e2-micro)
+PyYAML>=6.0
+python-dotenv>=1.0.0
+fastapi>=0.115.0
+uvicorn[standard]>=0.32.0

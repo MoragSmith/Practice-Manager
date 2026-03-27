@@ -16,8 +16,11 @@ from typing import Callable, Optional
 
 from PySide6.QtCore import QUrl, Qt
 from PySide6.QtGui import QImage, QPainter, QPixmap
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import (
+    QCheckBox,
     QDialog,
+    QDoubleSpinBox,
     QGraphicsPixmapItem,
     QGraphicsScene,
     QGraphicsView,
@@ -277,6 +280,11 @@ class MusicPlayer(QWidget):
         if self._player:
             self._player.stop()
 
+    def set_muted(self, muted: bool) -> None:
+        """Mute or unmute audio (volume 0 or 1)."""
+        if getattr(self, "_audio_output", None):
+            self._audio_output.setVolume(0.0 if muted else 1.0)
+
 
 class SessionWindow(QDialog):
     """Integrated practice session dialog.
@@ -342,6 +350,31 @@ class SessionWindow(QDialog):
         self._music_player = MusicPlayer(wav_path)
         right_layout.addWidget(self._music_player)
 
+        # Recall mode (optional)
+        self._recall_timer: Optional[QTimer] = None
+        recall_row = QHBoxLayout()
+        self._recall_cb = QCheckBox("Recall mode (hide music & PDF periodically)")
+        self._recall_cb.toggled.connect(self._on_recall_toggled)
+        recall_row.addWidget(self._recall_cb)
+        recall_row.addWidget(QLabel("Show (sec):"))
+        self._recall_show_spin = QDoubleSpinBox()
+        self._recall_show_spin.setRange(5, 300)
+        self._recall_show_spin.setValue(60)
+        recall_row.addWidget(self._recall_show_spin)
+        recall_row.addWidget(QLabel("Hide (sec):"))
+        self._recall_hide_spin = QDoubleSpinBox()
+        self._recall_hide_spin.setRange(5, 120)
+        self._recall_hide_spin.setValue(30)
+        recall_row.addWidget(self._recall_hide_spin)
+        self._recall_show_spin.setEnabled(False)
+        self._recall_hide_spin.setEnabled(False)
+        self._recall_cb.toggled.connect(
+            lambda on: (self._recall_show_spin.setEnabled(on), self._recall_hide_spin.setEnabled(on))
+        )
+        self._recall_show_spin.valueChanged.connect(self._on_recall_timing_changed)
+        self._recall_hide_spin.valueChanged.connect(self._on_recall_timing_changed)
+        right_layout.addLayout(recall_row)
+
         # Control buttons (lower right)
         self.streak_label = QLabel(f"Current streak: {initial_streak}")
         right_layout.addWidget(self.streak_label)
@@ -368,14 +401,64 @@ class SessionWindow(QDialog):
         """Handle Success button: record success and refresh streak."""
         self._on_success()
         self._refresh_streak()
+        if self._get_streak() >= 10:
+            self._do_end_session()
 
     def _do_fail(self) -> None:
         """Handle Fail button: record fail and refresh streak."""
         self._on_fail()
         self._refresh_streak()
 
+    def _on_recall_timing_changed(self) -> None:
+        """Restart recall timer with new durations when values change."""
+        if self._recall_cb.isChecked() and self._recall_timer:
+            self._recall_timer.stop()
+            self._recall_timer = None
+            self._recall_tick()
+
+    def _on_recall_toggled(self, checked: bool) -> None:
+        """Start or stop recall mode timer."""
+        if self._recall_timer:
+            self._recall_timer.stop()
+            self._recall_timer = None
+        if checked:
+            self._recall_phase_show = True  # Start with show phase
+            self._recall_tick()
+        else:
+            self._show_recall(True)  # Restore visibility when disabled
+
+    def _recall_tick(self) -> None:
+        """Alternate between show and hide phases."""
+        if not self._recall_cb.isChecked():
+            self._show_recall(True)
+            return
+        show_sec = self._recall_show_spin.value()
+        hide_sec = self._recall_hide_spin.value()
+        if self._recall_phase_show:
+            self._show_recall(True)
+            ms = int(show_sec * 1000)
+            self._recall_phase_show = False
+        else:
+            self._show_recall(False)
+            ms = int(hide_sec * 1000)
+            self._recall_phase_show = True
+        self._recall_timer = QTimer(self)
+        self._recall_timer.setSingleShot(True)
+        self._recall_timer.timeout.connect(self._recall_tick)
+        self._recall_timer.start(ms)
+
+    def _show_recall(self, show: bool) -> None:
+        """Show or hide PDF and music for recall mode (audio keeps playing)."""
+        self._pdf_viewer.setVisible(show)
+        if self._music_player:
+            self._music_player.setVisible(show)
+
     def _do_end_session(self) -> None:
         """Handle End Session: stop playback, close window, run callback."""
+        if self._recall_timer:
+            self._recall_timer.stop()
+            self._recall_timer = None
+        self._show_recall(True)
         if self._music_player:
             self._music_player.stop()
         if self._on_end_session:

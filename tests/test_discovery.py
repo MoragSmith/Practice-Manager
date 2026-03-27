@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.practice_manager.discovery import (
+from src.practice_manager.core.discovery import (
     _assign_part_to_tune,
     _discover_parts,
     _get_part_label,
