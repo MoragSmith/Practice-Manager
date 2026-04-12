@@ -9,6 +9,7 @@ This document defines operational boundaries for the `Practice Manager` reposito
 - Human-facing documentation: `docs/`
 - Deployment assets: `deploy/`
 - Entrypoints: `run.py` (desktop), `run_web.py` (web)
+- Historical reference docs: `docs/archive/` (e.g. completed web migration plan)
 
 ## Runtime State Boundaries
 
@@ -34,6 +35,7 @@ These are local artifacts and are safe to ignore in version control:
 - `*.egg-info/`
 - root containment zones if created: `logs/`, `tmp/`, `runtime/`, `generated/`, `backup/`
 - common residue patterns: `*.log`, `*.tmp`, `*.bak`, `*.old`
+- OS junk: `.DS_Store`, `Thumbs.db` (listed in `.gitignore`; do not commit)
 
 ## Launch and Operation
 

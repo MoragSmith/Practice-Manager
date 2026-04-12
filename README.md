@@ -26,6 +26,28 @@ Use this as the machine-room map for the repository:
 - `tracker-config.example.json` - template for local machine overrides
 - `tracker-config.json` - local-only machine config (gitignored)
 
+**At a glance (repository tree):**
+
+```
+Practice Manager/
+├── deploy/                    # VM/systemd and cloud deploy helpers
+├── docs/                      # operations, deployment, env repair, ai-prompts, archive/
+├── scripts/
+│   ├── env/                   # check_env.sh, run_tests.sh
+│   └── launch/                # canonical desktop launchers
+├── src/practice_manager/      # application package
+│   ├── core/                  # config, discovery, data model, decay, assets
+│   ├── ensemble/              # Playwright parts download
+│   ├── gui/                   # PySide6 desktop UI
+│   └── web/                   # FastAPI backend and static UI
+├── tests/                     # pytest (unit + integration)
+├── run.py                     # desktop entrypoint
+├── run_web.py                 # web entrypoint
+├── requirements*.txt          # Python dependencies (split by use case)
+├── launch_*.sh / .bat / .command   # root: thin wrappers → scripts/launch/
+└── tracker-config.example.json
+```
+
 Operational boundary notes:
 
 - Runtime practice state is stored in the OTPD Scores library, not in this repo:

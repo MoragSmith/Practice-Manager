@@ -2,16 +2,23 @@
 
 Use this when `pytest` or launch scripts fail due to stale absolute paths in the shared environment.
 
+**Operational overview:** `../../shared-dev-env/README.md` (from this file: `Scripts/shared-dev-env/README.md`) describes the venv layout, helper scripts (`setup/validate_env.sh`, `setup/export_requirements.sh`, `setup/repair_stale_paths.sh`), and stale-path behavior. **`activate_shared_dev.sh`** in `Scripts/` is **self-locating**: it `source`s `shared-dev-env/bin/activate` relative to its own directory, so you do not need to edit a hard-coded Dropbox path for normal use.
+
 ## Symptoms
 
 - `pytest: command not found`
-- `activate_shared_dev.sh` points to `Smith-Parkes Dropbox` path
-- `shared-dev-env/bin/pytest` references a non-existent python path
+- `shared-dev-env/bin/pytest` or `bin/python3` references a non-existent interpreter path
+- `grep` finds an old path inside `shared-dev-env/bin/*` (e.g. a previous Dropbox mount); see `shared-dev-env/README.md` and `setup/repair_stale_paths.sh` before rebuilding
 
 ## 5-Minute Safe Repair
 
-Run these from:
-`/Users/moragsmith/Library/CloudStorage/Dropbox-Smith-Parkes/Morag Smith/Tools & Systems/Scripts`
+Run these from your **Scripts** directory—the folder that contains `Practice Manager/`, `shared-dev-env/`, and `activate_shared_dev.sh`.
+
+**Primary path (Finder / Dropbox folder):**
+
+`/Users/moragsmith/Smith-Parkes Dropbox/Morag Smith/Tools & Systems/Scripts`
+
+If your machine uses Dropbox’s filesystem provider instead, the same folder may appear under `~/Library/CloudStorage/Dropbox-*/.../Tools & Systems/Scripts`. Use whichever path actually contains `shared-dev-env` on disk.
 
 1. Remove broken shared environment directory:
    ```bash
@@ -29,12 +36,16 @@ Run these from:
    pip install -r "Practice Manager/requirements-web.txt"
    playwright install chromium
    ```
-4. Regenerate `activate_shared_dev.sh` to use the current absolute path:
+4. Ensure `activate_shared_dev.sh` exists next to `shared-dev-env/` and uses the **self-locating** pattern (no hard-coded absolute path to the venv). If the file is missing or was overwritten with a broken `source` line, recreate it:
    ```bash
    cat > "activate_shared_dev.sh" <<'EOF'
-   #!/bin/bash
+   #!/usr/bin/env bash
+   # Activates the shared Python venv next to this script (works for any Dropbox mount path).
+   # Documentation: shared-dev-env/README.md
+   SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
    echo "Activating shared development environment..."
-   source "/Users/moragsmith/Library/CloudStorage/Dropbox-Smith-Parkes/Morag Smith/Tools & Systems/Scripts/shared-dev-env/bin/activate"
+   # shellcheck source=/dev/null
+   source "$SCRIPT_DIR/shared-dev-env/bin/activate"
    echo "Shared development environment activated."
    EOF
    chmod +x "activate_shared_dev.sh"
@@ -51,3 +62,4 @@ Run these from:
 
 - This rebuild is non-destructive for project source files.
 - If `python3` is not Python 3.12+, install/enable Python 3.12 first, then recreate the venv.
+- For **stale paths inside `bin/`** (wrong Dropbox prefix or moved folder) without a full delete/recreate, see **`shared-dev-env/README.md`** and **`shared-dev-env/setup/repair_stale_paths.sh`**.
