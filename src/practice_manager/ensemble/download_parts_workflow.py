@@ -12,7 +12,7 @@ from typing import Callable, List, Optional
 
 from playwright.async_api import async_playwright
 
-from ..config import get_ensemble_config, get_library_root
+from ..core import get_ensemble_config, get_library_root
 from .navigator import EnsembleNavigator
 from .parts_downloader import PartsDownloader
 

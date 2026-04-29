@@ -30,7 +30,7 @@ class TestGetLibraryRoot:
         config_path.write_text(json.dumps({"library_root": str(lib_path)}))
 
         # Patch _get_project_root to return our project_root
-        from src.practice_manager import config as config_module
+        from src.practice_manager.core import config as config_module
 
         original_get_root = config_module._get_project_root
 
@@ -56,7 +56,7 @@ class TestGetLibraryRoot:
             json.dumps({"library_root": str(lib_path)})
         )
 
-        from src.practice_manager import config as config_module
+        from src.practice_manager.core import config as config_module
 
         original = config_module._get_project_root
         config_module._get_project_root = lambda: project_root
@@ -72,7 +72,7 @@ class TestGetLibraryRoot:
         project_root.mkdir()
         # No tracker-config.json, no OTPD path
 
-        from src.practice_manager import config as config_module
+        from src.practice_manager.core import config as config_module
 
         original = config_module._get_project_root
         config_module._get_project_root = lambda: project_root
@@ -94,7 +94,7 @@ class TestGetEnsembleConfig:
 
     def test_returns_dict_with_expected_keys(self) -> None:
         """Config dict has username, password, downloads_dir, scores_dir."""
-        from src.practice_manager.config import get_ensemble_config
+        from src.practice_manager.core import get_ensemble_config
 
         config = get_ensemble_config()
         assert "username" in config
@@ -104,7 +104,7 @@ class TestGetEnsembleConfig:
 
     def test_downloads_dir_defaults_to_home_downloads(self) -> None:
         """When not configured, downloads_dir is ~/Downloads."""
-        from src.practice_manager.config import get_ensemble_config
+        from src.practice_manager.core import get_ensemble_config
 
         config = get_ensemble_config()
         assert config["downloads_dir"] is not None
@@ -115,7 +115,7 @@ class TestGetEnsembleConfig:
         monkeypatch.setenv("ENSEMBLE_USERNAME", "testuser")
         monkeypatch.setenv("ENSEMBLE_PASSWORD", "testpass")
 
-        from src.practice_manager.config import get_ensemble_config
+        from src.practice_manager.core import get_ensemble_config
 
         config = get_ensemble_config()
         assert config["username"] == "testuser"

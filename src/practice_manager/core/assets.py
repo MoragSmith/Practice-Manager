@@ -112,7 +112,7 @@ def open_file(path: Path, app: Optional[str] = None) -> None:
     if not path.exists():
         logger.error("File not found: %s", path)
         return
-    
+
     system = platform.system()
     try:
         if system == "Darwin":  # macOS

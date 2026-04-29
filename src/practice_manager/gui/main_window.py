@@ -25,9 +25,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from ..config import INSTRUMENTS, PART_LABELS
-from ..data_model import get_item, set_item
-from ..discovery import discover
+from ..core import INSTRUMENTS, PART_LABELS, discover, get_item, set_item
 
 
 class MainWindow(QMainWindow):

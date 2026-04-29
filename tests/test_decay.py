@@ -4,7 +4,7 @@ from datetime import datetime, timezone, timedelta
 
 import pytest
 
-from src.practice_manager.decay import apply_decay, _parse_iso
+from src.practice_manager.core.decay import apply_decay, _parse_iso
 
 
 def test_parse_iso() -> None:
