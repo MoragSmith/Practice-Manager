@@ -16,7 +16,7 @@ Run these from your **Scripts** directory—the folder that contains `Practice M
 
 **Primary path (Finder / Dropbox folder):**
 
-`/Users/moragsmith/Smith-Parkes Dropbox/Morag Smith/Tools & Systems/Scripts`
+`/Users/moragsmith/Library/CloudStorage/Dropbox-Smith-Parkes/Morag Smith/Tools & Systems/Scripts`
 
 If your machine uses Dropbox’s filesystem provider instead, the same folder may appear under `~/Library/CloudStorage/Dropbox-*/.../Tools & Systems/Scripts`. Use whichever path actually contains `shared-dev-env` on disk.
 
