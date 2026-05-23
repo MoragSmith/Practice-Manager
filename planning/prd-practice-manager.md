@@ -3,7 +3,7 @@
 ## Status
 - Status: active_build
 - Completion: core product implemented; verification and deployment hardening remain
-- Test status: standardized suite passing locally as of 2026-05-21 (`64 passed, 1 skipped`); web API regression coverage added for library/status/assets/practice, with real-library smoke checks also passing
+- Test status: standardized suite passing locally as of 2026-05-23 (`68 passed, 1 skipped`); web API regression coverage includes library/status/assets/practice, missing-item reconciliation, and Basic Auth checking
 
 ## Product Goal
 Help musicians track mastery of OTPD repertoire by set, tune, and part, with integrated score/audio practice sessions and shared data across desktop and web runtimes.
@@ -35,6 +35,7 @@ Help musicians track mastery of OTPD repertoire by set, tune, and part, with int
 - Static frontend for browse + practice flow
 - Recall mode in practice session
 - Optional HTTP Basic Auth
+- Automatic missing-item reconciliation for renamed/removed tunes and parts
 
 ### Operations
 - Standard launch/test scripts
@@ -42,16 +43,13 @@ Help musicians track mastery of OTPD repertoire by set, tune, and part, with int
 - Deployment guide and systemd assets
 
 ## Known Gaps
-- Missing-item detection exists in the schema/UI conceptually but is not yet implemented
 - Deployment remains documented rather than fully proven end-to-end in this repo
-- `widgets.py` is an unused placeholder
+- Internet-facing deployments should use HTTPS plus Basic Auth at minimum; IAP/VPN is preferred for stronger protection
 
 ## Immediate Next Steps
 1. Decide whether the web-runtime branch is ready for merge or needs one more hardening pass
 2. If deployment is near-term, prove the documented VM path on a real target
-3. Consider automatic missing-item detection before broader use
 
 ## Product Questions Still Worth Answering
-- Should “missing” items be marked automatically when discovered library contents diverge from saved practice records?
 - Is the web app intended as a full peer to desktop, or primarily a remote-access companion?
-- Does the deployment target need stronger auth than optional Basic Auth before real use?
+- Is the deployment target public enough to require IAP/VPN, or is HTTPS + Basic Auth sufficient for the first release?

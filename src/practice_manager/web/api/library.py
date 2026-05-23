@@ -6,7 +6,14 @@ from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from src.practice_manager.core import discover, get_data_dir, get_library_root, load
+from src.practice_manager.core import (
+    discover,
+    get_data_dir,
+    get_library_root,
+    load,
+    reconcile_missing_items,
+    save,
+)
 
 router = APIRouter()
 
@@ -60,6 +67,8 @@ def get_library() -> dict:
     library_root, data_dir, data = _get_context()
     items = data.get("items", {})
     sets_list = discover(library_root, data_dir, items)
+    if reconcile_missing_items(data, sets_list):
+        save(data, data_dir)
     return {
         "library_root": str(library_root),
         "sets": [_serialize_set(s, library_root) for s in sets_list],
@@ -72,6 +81,8 @@ def get_set(set_id: str) -> dict:
     library_root, data_dir, data = _get_context()
     items = data.get("items", {})
     sets_list = discover(library_root, data_dir, items)
+    if reconcile_missing_items(data, sets_list):
+        save(data, data_dir)
     for s in sets_list:
         if s["set_id"] == set_id:
             return _serialize_set(s, library_root)

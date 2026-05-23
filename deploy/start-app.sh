@@ -19,7 +19,7 @@ pkill -f "uvicorn.*practice_manager" 2>/dev/null
 sleep 1
 
 # Start app in background (nohup keeps it running after SSH closes)
-# Add AUTH_USERNAME and AUTH_PASSWORD for password protection, e.g.:
+# Add AUTH_USERNAME and AUTH_PASSWORD for password protection, preferably behind HTTPS, e.g.:
 #   AUTH_USERNAME=myuser AUTH_PASSWORD=mypass nohup env ...
 nohup env LIBRARY_ROOT=/mnt/otpd-scores \
   "$PYTHON" -m uvicorn src.practice_manager.web.main:app --host 0.0.0.0 --port 8000 \

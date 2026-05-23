@@ -7,4 +7,3 @@ Reviewed against `planning/prd-practice-manager.md` and `planning/tasks-practice
 
 1. **Merge or open an integration PR for the verified web-runtime branch** *(priority: high)* *(~30 min)*
 2. **Prove the documented VM + rclone deployment path if cloud use is near-term** *(priority: medium)* *(~60 min)*
-3. **Implement automatic missing-item detection if library renames/removals are becoming common** *(priority: medium)* *(~45 min)*

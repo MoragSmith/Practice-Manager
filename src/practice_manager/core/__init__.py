@@ -17,6 +17,7 @@ from .data_model import (
     create_item,
     get_item,
     load,
+    reconcile_missing_items,
     save,
     set_item,
 )
@@ -33,6 +34,7 @@ __all__ = [
     "create_empty_state",
     "create_item",
     "get_item",
+    "reconcile_missing_items",
     "load",
     "save",
     "set_item",

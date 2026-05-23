@@ -10,6 +10,7 @@ from src.practice_manager.core.data_model import (
     create_item,
     get_item,
     load,
+    reconcile_missing_items,
     save,
     set_item,
 )
@@ -71,3 +72,41 @@ def test_set_item_creates_new() -> None:
     set_item(data, "tune1", "tune", 2, 20.0)
     assert "tune1" in data["items"]
     assert data["items"]["tune1"]["streak"] == 2
+
+
+def test_reconcile_missing_items_marks_removed_tunes_and_restores_reappeared() -> None:
+    data = create_empty_state()
+    present_id = "Section 1|Set 01|Tune A"
+    removed_id = "Section 1|Set 01|Tune B"
+    set_item(data, present_id, "tune", 4, 40.0)
+    set_item(data, removed_id, "tune", 7, 70.0)
+
+    changed = reconcile_missing_items(
+        data,
+        [{"set_id": "Section 1|Set 01", "tunes": [{"tune_id": present_id}], "parts": []}],
+    )
+
+    assert changed is True
+    assert data["items"][present_id]["missing"] is False
+    assert data["items"][removed_id]["missing"] is True
+    assert data["items"][removed_id]["streak"] == 7
+    assert data["items"][removed_id]["score"] == 70.0
+
+    changed = reconcile_missing_items(
+        data,
+        [{"set_id": "Section 1|Set 01", "tunes": [{"tune_id": removed_id}], "parts": []}],
+    )
+
+    assert changed is True
+    assert data["items"][present_id]["missing"] is True
+    assert data["items"][removed_id]["missing"] is False
+
+
+def test_reconcile_missing_items_ignores_organizational_sets() -> None:
+    data = create_empty_state()
+    set_item(data, "Section 1|Set 01", "set", 0, 0.0)
+
+    changed = reconcile_missing_items(data, [])
+
+    assert changed is False
+    assert data["items"]["Section 1|Set 01"]["missing"] is False

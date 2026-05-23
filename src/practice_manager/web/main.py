@@ -11,6 +11,7 @@ HTTP Basic Authentication. If unset, the site is open.
 import base64
 import logging
 import os
+import secrets
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
@@ -54,7 +55,10 @@ def _check_basic_auth(auth_header: str | None) -> bool:
     try:
         decoded = base64.b64decode(auth_header[6:]).decode("utf-8")
         username, _, password = decoded.partition(":")
-        return username == AUTH_USERNAME and password == AUTH_PASSWORD
+        return (
+            secrets.compare_digest(username, AUTH_USERNAME or "")
+            and secrets.compare_digest(password, AUTH_PASSWORD or "")
+        )
     except Exception:
         return False
 

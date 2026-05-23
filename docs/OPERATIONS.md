@@ -58,10 +58,10 @@ Use the standardized runner before merge or deployment work:
 bash scripts/env/run_tests.sh
 ```
 
-Current expected result after the web API regression pass:
+Current expected result after the missing-item/auth hardening pass:
 
 ```text
-64 passed, 1 skipped
+68 passed, 1 skipped
 ```
 
 The skipped test is the real Ensemble E2E path, which requires configured Ensemble credentials and library access.

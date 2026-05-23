@@ -289,7 +289,9 @@ Configure Caddy to proxy to `localhost:8000` and handle HTTPS. (I can provide a 
 
 ## Part 6: Password Protection
 
-Practice Manager supports HTTP Basic Authentication. Set these environment variables before starting the app:
+Practice Manager supports HTTP Basic Authentication. For any public internet deployment, treat auth as **required**, not optional, and serve it over HTTPS. Basic Auth protects casual access, but credentials are only safe in transit when TLS is in front of the app.
+
+Set these environment variables before starting the app:
 
 ```bash
 export AUTH_USERNAME="your_username"
@@ -305,13 +307,22 @@ Environment="AUTH_USERNAME=your_username"
 Environment="AUTH_PASSWORD=your_password"
 ```
 
+Recommended minimum deployment posture:
+
+- Set `AUTH_USERNAME` and a long random `AUTH_PASSWORD`
+- Put Caddy, nginx, Google Load Balancer, or IAP in front for HTTPS
+- Do not expose the app publicly without both auth and HTTPS
+- If this is only for personal use, consider firewalling port 8000 to your IP or using a VPN/IAP instead of opening it broadly
+
 ## Part 7: Additional Security (Optional)
 
 For stronger protection:
 
-1. **Google OAuth** – Sign in with your Google account
-2. **IAP** – Identity-Aware Proxy so only your Google account can reach the VM
-3. **VPN** – Restrict access to your network
+1. **IAP** – Identity-Aware Proxy so only your Google account can reach the VM
+2. **VPN** – Restrict access to your network
+3. **Google OAuth** – Application-level sign-in with your Google account
+
+For a single-user deployment, **IAP or VPN + HTTPS** is stronger than relying on Basic Auth alone.
 
 ---
 

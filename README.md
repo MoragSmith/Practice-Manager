@@ -62,11 +62,12 @@ Operational boundary notes:
 As of the latest local verification pass, the core product is implemented for desktop and web:
 
 - Shared core, desktop UI, web API/frontend, Ensemble parts workflow, and deployment docs are present
-- Automated suite passes locally: `64 passed, 1 skipped`
+- Automated suite passes locally: `68 passed, 1 skipped`
 - Web API regression tests cover library/status reads, asset streaming/path containment, and practice start/success/fail/reset flow
+- Missing-item detection now marks stored tune/part records when library files are renamed or removed, while preserving prior streak/score history
 - Real-library smoke checks have passed against the configured Google Drive OTPD Scores library
 
-Remaining work is not core functionality; it is hardening and operational confidence: merge/integration decision, optional deployment proof, and automatic missing-item detection.
+Remaining work is not core functionality; it is operational confidence: merge/integration decision and optional deployment proof.
 
 ## Setup
 
@@ -139,7 +140,7 @@ Location: `OTPD Scores/#Script Resources/data/practice_status.json`
 | score | float | 0–100 |
 | last_practiced | string? | ISO timestamp |
 | last_score_updated | string? | ISO timestamp (for decay) |
-| missing | bool | True if item was renamed/removed |
+| missing | bool | True if item was renamed/removed and no longer appears in discovery |
 
 **Item ID format:**
 - Tune: `SectionName|SetFolderName|TuneName`
@@ -186,8 +187,8 @@ Internal AI prompt templates live in `docs/ai-prompts/`.
 
 ## Known Gaps / Future Work
 
-- **Missing items**: The schema supports `missing: true` for renamed/removed items, and the UI shows "(missing)" in the sets list. Nothing currently *sets* items as missing; that logic (comparing discovered IDs vs stored items) is not implemented.
-- **widgets.py**: Placeholder module for future shared UI components; unused.
+- **Deployment proof**: The VM + rclone deployment path is documented but still should be proven on the actual target before relying on it.
+- **Authentication posture**: Basic Auth is available and now documented as a minimum; for internet exposure, prefer HTTPS plus IAP/VPN or another stronger perimeter.
 
 ## Tests
 
@@ -211,7 +212,7 @@ Then follow `docs/ENV_REPAIR_CHECKLIST.md`.
 - **test_parts_organizer.py** – PartsOrganizer: prefix extraction, folder mapping, file moves with real tmp_path
 - **test_config.py** – Config: get_library_root and get_ensemble_config with real config files in tmp_path
 - **test_data_model.py**, **test_decay.py**, **test_discovery.py** – Data model, decay, discovery
-- **test_web_api.py** – Isolated FastAPI regression tests against a temporary OTPD Scores-style fixture
+- **test_web_api.py** – Isolated FastAPI regression tests against a temporary OTPD Scores-style fixture, including missing-item reconciliation and Basic Auth checking
 - **tests/integration/test_ensemble_parts.py** – E2E against real Ensemble: login → Parts → download (requires ENSEMBLE_USERNAME, ENSEMBLE_PASSWORD, library root)
 
 Integration test is skipped if library root or Ensemble credentials are not configured.
