@@ -59,15 +59,16 @@ Operational boundary notes:
 
 ## Current Status
 
-As of the latest local verification pass, the core product is implemented for desktop and web:
+As of the latest local verification pass, the core product is implemented for desktop and web and merged to `main`:
 
 - Shared core, desktop UI, web API/frontend, Ensemble parts workflow, and deployment docs are present
 - Automated suite passes locally: `68 passed, 1 skipped`
 - Web API regression tests cover library/status reads, asset streaming/path containment, and practice start/success/fail/reset flow
 - Missing-item detection now marks stored tune/part records when library files are renamed or removed, while preserving prior streak/score history
 - Real-library smoke checks have passed against the configured Google Drive OTPD Scores library
+- Local production-entrypoint smoke with Basic Auth passed (`401` unauthenticated, `200` authenticated, `/api/library` readable)
 
-Remaining work is not core functionality; it is operational confidence: merge/integration decision and optional deployment proof.
+Remaining work is not core functionality; it is deployment confidence: prove the VM + rclone path on the actual Google Cloud target before relying on it.
 
 ## Setup
 

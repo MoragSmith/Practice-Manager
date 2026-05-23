@@ -5,5 +5,5 @@ Reviewed against `planning/prd-practice-manager.md` and `planning/tasks-practice
 
 ## Current next actions
 
-1. **Merge or open an integration PR for the verified web-runtime branch** *(priority: high)* *(~30 min)*
-2. **Prove the documented VM + rclone deployment path if cloud use is near-term** *(priority: medium)* *(~60 min)*
+1. **Prove the documented VM + rclone deployment path on the actual Google Cloud target if cloud use is near-term** *(priority: medium)* *(~60 min)*
+2. **Configure production HTTPS/auth perimeter before public exposure** *(priority: medium)* *(~30 min)*

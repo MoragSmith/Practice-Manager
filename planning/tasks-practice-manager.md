@@ -21,12 +21,14 @@
 - [x] Implement automatic missing-item detection and surface set-level missing counts
 - [x] Remove unused `gui/widgets.py` placeholder
 - [x] Clarify deployment/auth posture for internet-facing use
-- [ ] Decide merge readiness for `feature/operational-legibility-web-runtime`
+- [x] Merge PR #1 / `feature/operational-legibility-web-runtime` into `main`
+- [x] Smoke-test production web entrypoint locally with Basic Auth and real configured library
 
 ## Recommended Next Slice
 - [x] Add API tests for `/api/library`, `/api/status`, `/api/practice`, and `/api/assets`
 - [x] Implement automatic missing-item detection
 - [x] Clarify deployment/auth posture for real-world use
+- [ ] Prove VM + rclone deployment on the actual Google Cloud target if cloud use is near-term
 
 ## Later
 - [ ] Revisit deployment options beyond VM + rclone if serverless hosting becomes desirable
@@ -41,3 +43,4 @@
 - 2026-05-21 regression update: added isolated `tests/test_web_api.py`; full suite now passes with `64 passed, 1 skipped`.
 - 2026-05-23 documentation/comment pass: README and operations docs now describe current verification baseline; web API tests and path/session helpers include clarifying comments/docstrings.
 - 2026-05-23 hardening pass: missing-item reconciliation implemented and covered; unused `gui/widgets.py` removed; Basic Auth compare hardened and deployment auth docs clarified. Full suite now passes with `68 passed, 1 skipped`.
+- 2026-05-23 integration pass: PR #1 merged to `main`; post-merge test suite passes with `68 passed, 1 skipped`. Local Uvicorn deployment smoke with Basic Auth passed against the configured Google Drive library.
