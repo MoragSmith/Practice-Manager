@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from src.practice_manager.assets import get_part_assets, get_tune_assets
+from src.practice_manager.core.assets import get_part_assets, get_tune_assets
 
 
 def test_get_part_assets_prefers_instrument_pdf(tmp_path: Path) -> None:

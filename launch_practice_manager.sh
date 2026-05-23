@@ -1,4 +1,6 @@
 #!/bin/bash
-# Launch Practice Manager GUI (run from desktop shortcut)
-cd "$(dirname "$0")"
-exec ../shared-dev-env/bin/python run.py
+# Backward-compatible wrapper. Canonical launcher lives in scripts/launch/.
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+exec "$SCRIPT_DIR/scripts/launch/launch_practice_manager.sh"

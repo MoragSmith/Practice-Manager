@@ -1,0 +1,385 @@
+:root {
+  --bg: #1a1a2e;
+  --bg-card: #16213e;
+  --accent: #e94560;
+  --accent-hover: #ff6b6b;
+  --success: #4ecca3;
+  --success-hover: #6ee7b7;
+  --fail: #e94560;
+  --text: #eee;
+  --text-muted: #aaa;
+  --border: #2a2a4a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.5rem;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border);
+}
+
+.header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.header-controls {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.header-controls label {
+  font-size: 0.9rem;
+}
+
+#decay-rate {
+  width: 4rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+}
+
+/* Main layout: left sets | right details */
+.main-layout {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  min-height: calc(100vh - 52px);
+}
+
+@media (max-width: 768px) {
+  .main-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sets-pane {
+  border-right: 1px solid var(--border);
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.sets-pane h2,
+.details-pane h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+}
+
+.sets-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.set-list-item {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.set-list-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.set-list-item.selected {
+  border-color: var(--accent);
+  background: rgba(233, 69, 96, 0.1);
+}
+
+.set-list-item .set-name {
+  font-weight: 500;
+}
+
+.set-list-item .set-summary {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.details-pane {
+  padding: 1rem;
+  overflow-y: auto;
+}
+
+.placeholder {
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.details-content .set-group,
+.details-content .group {
+  margin-bottom: 1.5rem;
+}
+
+.details-content h3 {
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+
+.muted {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  margin: 0 0 0.75rem;
+}
+
+.control-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.control-row select {
+  padding: 0.4rem 0.8rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.item-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid var(--border);
+}
+
+.item-row:last-child {
+  border-bottom: none;
+}
+
+.item-row .item-info {
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+.item-row .item-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.btn {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.9rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background 0.15s;
+}
+
+.btn-success {
+  background: var(--success);
+  color: #111;
+}
+
+.btn-success:hover {
+  background: var(--success-hover);
+}
+
+.btn-fail {
+  background: var(--fail);
+  color: white;
+}
+
+.btn-fail:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  background: var(--border);
+  color: var(--text);
+}
+
+.btn-secondary:hover {
+  background: #3a3a5a;
+}
+
+.btn-small {
+  padding: 0.25rem 0.5rem;
+  font-size: 0.8rem;
+}
+
+.tune-subheader {
+  font-weight: 600;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.part-indent {
+  margin-left: 1rem;
+}
+
+/* Session overlay */
+.session-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+}
+
+.session-overlay.hidden {
+  display: none !important;
+}
+
+.session-layout {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  flex: 1;
+  min-height: 0;
+  gap: 1rem;
+  padding: 1rem;
+}
+
+@media (max-width: 900px) {
+  .session-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.session-left {
+  min-height: 400px;
+  background: var(--bg-card);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+#pdf-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+}
+
+#pdf-frame {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: none;
+}
+
+#pdf-placeholder, #audio-placeholder {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--text-muted);
+}
+
+.session-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.session-info {
+  background: var(--bg-card);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.session-info h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+}
+
+.streak {
+  font-weight: 600;
+  margin-top: 0.5rem;
+  color: var(--success);
+}
+
+.audio-section {
+  background: var(--bg-card);
+  padding: 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  position: relative;
+}
+
+.audio-section audio {
+  width: 100%;
+}
+
+.recall-mode {
+  background: var(--bg-card);
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+}
+
+.recall-inputs {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.recall-inputs input {
+  width: 4rem;
+  padding: 0.3rem;
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+}
+
+.recall-inputs input:disabled {
+  opacity: 0.6;
+}
+
+#pdf-container.recall-hidden {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text-muted);
+  font-size: 1.2rem;
+}
+
+#pdf-container.recall-hidden iframe {
+  display: none;
+}
+
+#pdf-container.recall-hidden::after {
+  content: "Recall — play from memory";
+}
+
+.session-buttons {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.hidden {
+  display: none !important;
+}

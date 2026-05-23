@@ -11,10 +11,17 @@ from pathlib import Path
 
 from PySide6.QtWidgets import QApplication, QMessageBox
 
-from src.practice_manager.config import get_library_root, get_data_dir
-from src.practice_manager.data_model import get_item, load, save, set_item
-from src.practice_manager.decay import apply_decay
-from src.practice_manager.assets import get_tune_assets, get_part_assets
+from src.practice_manager.core import (
+    get_data_dir,
+    get_item,
+    get_library_root,
+    get_part_assets,
+    get_tune_assets,
+    load,
+    save,
+    set_item,
+    apply_decay,
+)
 from src.practice_manager.gui.main_window import MainWindow
 from src.practice_manager.gui.session_window import SessionWindow
 

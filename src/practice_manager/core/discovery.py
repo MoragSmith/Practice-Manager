@@ -125,7 +125,7 @@ def _discover_parts(
     discovered: List[Dict[str, Any]] = []
     pdfs_by_key: Dict[str, Path] = {}
     wavs_by_key: Dict[str, Path] = {}
-    
+
     for f in parts_path.iterdir():
         if not f.is_file():
             continue
@@ -143,7 +143,7 @@ def _discover_parts(
             if key in wavs_by_key:
                 logger.debug("Multiple WAVs for key %s (using %s)", key, f.name)
             wavs_by_key[key] = f
-    
+
     # Build part records: group by label, part_id = display name (base key for pairing)
     by_label: Dict[str, List[Tuple[str, Path, Path]]] = {lb: [] for lb in PART_LABELS}
     for key in set(pdfs_by_key.keys()) | set(wavs_by_key.keys()):
@@ -155,13 +155,13 @@ def _discover_parts(
         label = _get_part_label(key)
         if label:
             by_label[label].append((key, pdf, wav))
-    
+
     # Order: phrase, line, part. Within each, sort by streak (need items for streak)
     def streak_for(part_stem: str) -> int:
         full_id = f"{set_id}|Parts|{part_stem}"
         rec = items.get(full_id, {})
         return rec.get("streak", 0)
-    
+
     for label in PART_LABELS:
         parts_in_label = by_label.get(label, [])
         # Sort by streak ascending
@@ -174,7 +174,7 @@ def _discover_parts(
                 "pdf_path": pdf_path,
                 "wav_path": wav_path,
             })
-    
+
     return discovered
 
 
@@ -185,18 +185,18 @@ def discover(
 ) -> List[Dict[str, Any]]:
     """
     Discover all sets (with tunes and parts) from the library.
-    
+
     Returns a flat list of set dicts, each with:
       - section_name, set_folder_name, set_path
       - set_id (Section|SetFolder)
       - tunes: [{tune_name, tune_id, ...}]
       - parts: [{part_id, label, pdf_path, wav_path}, ...] (from Parts/ if exists)
-    
+
     items: current practice status items (for streak-based part ordering)
     """
     structure = _load_structure_map(data_dir)
     result: List[Dict[str, Any]] = []
-    
+
     # Find section folders
     for item in library_root.iterdir():
         if not item.is_dir() or _should_exclude_dir(item.name):
@@ -204,17 +204,17 @@ def discover(
         # Match "Section N - Name"
         if not re.match(r"Section\s+\d+\s+-", item.name, re.IGNORECASE):
             continue
-        
+
         section_name = item.name
-        
+
         for set_item in item.iterdir():
             if not set_item.is_dir() or set_item.name.startswith("."):
                 continue
-            
+
             set_folder_name = set_item.name
             set_path = set_item
             set_id = f"{section_name}|{set_folder_name}"
-            
+
             # Tunes from structure or inference
             tunes: List[Dict[str, Any]] = []
             if structure:
@@ -232,7 +232,7 @@ def discover(
                                         })
                                 break
                         break
-            
+
             if not tunes:
                 inferred = _infer_tunes_from_set_folder(set_path)
                 for tune_name in inferred:
@@ -242,7 +242,7 @@ def discover(
             if not tunes:
                 tune_id = f"{set_id}|{set_folder_name}"
                 tunes.append({"tune_name": set_folder_name, "tune_id": tune_id})
-            
+
             # Parts from Parts/ subfolder
             parts: List[Dict[str, Any]] = []
             parts_dir = set_path / "Parts"
@@ -254,7 +254,7 @@ def discover(
                     p["tune_id"], p["tune_name"] = _assign_part_to_tune(
                         p["part_id"], tune_names, set_id, set_folder_name
                     )
-            
+
             result.append({
                 "section_name": section_name,
                 "set_folder_name": set_folder_name,
@@ -263,7 +263,7 @@ def discover(
                 "tunes": tunes,
                 "parts": parts,
             })
-    
+
     # Sort by section then set folder name
     result.sort(key=lambda x: (x["section_name"], x["set_folder_name"]))
     return result

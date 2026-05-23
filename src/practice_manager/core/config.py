@@ -5,11 +5,17 @@ Discovers library root from (in order):
 1. OTPD Music Manager config/default.yaml or data/preferences.json (paths.scores_dir)
 2. #Script Resources/config.json in library (otpd_scores_directory)
 3. tracker-config.json in Practice Manager project (library_root)
+
+Supports cross-platform config: paths may be strings or dicts keyed by platform:
+  {"Darwin": "/path/on/mac", "Windows": "D:\\path\\on\\win"}
+Environment variables LIBRARY_ROOT and OTPD_MANAGER_PATH override config when set.
 """
 
 import json
+import os
+import platform
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
 # Default instruments from OTPD
 INSTRUMENTS = ["bagpipes", "seconds", "bass", "snare", "tenor"]
@@ -18,9 +24,38 @@ INSTRUMENTS = ["bagpipes", "seconds", "bass", "snare", "tenor"]
 PART_LABELS = ["phrase", "line", "part"]
 
 
+def _resolve_platform_path(value: Any) -> Optional[str]:
+    """
+    Resolve a path from config: string, or dict with Darwin/Windows keys.
+    Returns None if no valid path for current platform.
+    """
+    if value is None:
+        return None
+    if isinstance(value, dict):
+        sys_name = platform.system()
+        value = value.get(sys_name) or value.get("Darwin") or value.get("Windows")
+    if isinstance(value, str) and value.strip():
+        return value.strip()
+    return None
+
+
+def _load_tracker_config() -> dict:
+    """Load tracker-config.json with platform-specific path resolution."""
+    project_root = _get_project_root()
+    config_path = project_root / "tracker-config.json"
+    if not config_path.exists():
+        return {}
+    try:
+        with open(config_path) as f:
+            return json.load(f)
+    except Exception:
+        return {}
+
+
 def _get_project_root() -> Path:
-    """Return Practice Manager project root."""
-    return Path(__file__).resolve().parent.parent.parent
+    """Return Practice Manager project root (parent of src/)."""
+    # core/config.py -> core -> practice_manager -> src -> project_root
+    return Path(__file__).resolve().parent.parent.parent.parent
 
 
 def _load_yaml_safe(path: Path) -> Optional[dict]:
@@ -35,23 +70,19 @@ def _load_yaml_safe(path: Path) -> Optional[dict]:
 
 def _get_from_otpd_manager() -> Optional[Path]:
     """Try to get scores_dir from OTPD Music Manager."""
-    project_root = _get_project_root()
-    tracker_config_path = project_root / "tracker-config.json"
-    
     otpd_path: Optional[Path] = None
-    if tracker_config_path.exists():
-        try:
-            with open(tracker_config_path) as f:
-                data = json.load(f)
-                p = data.get("otpd_manager_path")
-                if p:
-                    otpd_path = Path(p).expanduser()
-        except Exception:
-            pass
-    
+    p_str = os.environ.get("OTPD_MANAGER_PATH")
+    if p_str:
+        otpd_path = Path(p_str).expanduser()
+    else:
+        data = _load_tracker_config()
+        p_str = _resolve_platform_path(data.get("otpd_manager_path"))
+        if p_str:
+            otpd_path = Path(p_str).expanduser()
+
     if not otpd_path or not otpd_path.exists():
         return None
-    
+
     # Try preferences.json first (user overrides)
     prefs_path = otpd_path / "data" / "preferences.json"
     if prefs_path.exists():
@@ -65,7 +96,7 @@ def _get_from_otpd_manager() -> Optional[Path]:
                         return p
         except Exception:
             pass
-    
+
     # Try config/default.yaml
     config_path = otpd_path / "config" / "default.yaml"
     if config_path.exists():
@@ -76,7 +107,7 @@ def _get_from_otpd_manager() -> Optional[Path]:
                 p = Path(scores_dir).expanduser()
                 if p.exists():
                     return p
-    
+
     return None
 
 
@@ -104,21 +135,15 @@ def _get_from_script_resources(candidate_root: Path) -> Optional[Path]:
 
 
 def _get_from_tracker_config() -> Optional[Path]:
-    """Get library_root from tracker-config.json."""
-    project_root = _get_project_root()
-    config_path = project_root / "tracker-config.json"
-    if not config_path.exists():
-        return None
-    try:
-        with open(config_path) as f:
-            data = json.load(f)
-            lib = data.get("library_root")
-            if lib:
-                p = Path(lib).expanduser()
-                if p.exists():
-                    return p
-    except Exception:
-        pass
+    """Get library_root from tracker-config.json (supports platform-specific paths)."""
+    lib_str = os.environ.get("LIBRARY_ROOT")
+    if not lib_str:
+        data = _load_tracker_config()
+        lib_str = _resolve_platform_path(data.get("library_root"))
+    if lib_str:
+        p = Path(lib_str).expanduser()
+        if p.exists():
+            return p
     return None
 
 
@@ -144,11 +169,11 @@ def get_library_root() -> Path:
         if override is not None:
             return override
         return root
-    
+
     root = _get_from_tracker_config()
     if root is not None:
         return root
-    
+
     raise FileNotFoundError(
         "Could not discover OTPD Scores library. "
         "Create tracker-config.json with 'library_root' and optionally 'otpd_manager_path'."
@@ -162,20 +187,16 @@ def get_ensemble_config() -> dict:
     Returns dict with username, password, downloads_dir, scores_dir.
     Username/password from: .env (OTPD or Practice Manager), env vars, or config.
     """
-    import os
-
     project_root = _get_project_root()
-    tracker_config_path = project_root / "tracker-config.json"
     otpd_path: Optional[Path] = None
-    if tracker_config_path.exists():
-        try:
-            with open(tracker_config_path) as f:
-                data = json.load(f)
-                p = data.get("otpd_manager_path")
-                if p:
-                    otpd_path = Path(p).expanduser()
-        except Exception:
-            pass
+    p_str = os.environ.get("OTPD_MANAGER_PATH")
+    if p_str:
+        otpd_path = Path(p_str).expanduser()
+    else:
+        data = _load_tracker_config()
+        p_str = _resolve_platform_path(data.get("otpd_manager_path"))
+        if p_str:
+            otpd_path = Path(p_str).expanduser()
 
     # Load .env from OTPD Music Manager or Practice Manager (for ENSEMBLE_USERNAME/PASSWORD)
     try:

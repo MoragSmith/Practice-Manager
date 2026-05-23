@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Practice Manager</title>
+  <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1>Practice Manager</h1>
+      <div class="header-controls">
+        <label>Decay %/day:</label>
+        <input type="number" id="decay-rate" min="0" max="10" step="0.1" value="1">
+        <label class="checkbox-label">
+          <input type="checkbox" id="focus-only"> Show focus only
+        </label>
+      </div>
+    </header>
+
+    <div class="main-layout">
+      <!-- Left: Sets list -->
+      <aside class="sets-pane">
+        <h2>Sets</h2>
+        <div id="sets-list" class="sets-list"></div>
+      </aside>
+
+      <!-- Right: Set details -->
+      <main class="details-pane">
+        <h2>Set details</h2>
+        <div id="details-placeholder" class="placeholder">Select a set</div>
+        <div id="details-content" class="details-content hidden">
+          <div class="set-group">
+            <h3>Set</h3>
+            <p class="muted">Practice and mastery apply to individual tunes and parts below.</p>
+            <div class="control-row">
+              <label>Instrument for this set:</label>
+              <select id="set-instrument"></select>
+            </div>
+            <label class="checkbox-label">
+              <input type="checkbox" id="focus-set"> Focus set
+            </label>
+          </div>
+          <div id="tunes-group" class="group"></div>
+          <div id="parts-group" class="group"></div>
+        </div>
+      </main>
+    </div>
+
+    <!-- Practice session view (overlay) -->
+    <div id="session-view" class="session-overlay hidden">
+      <div class="session-layout">
+        <div class="session-left">
+          <div id="pdf-container">
+            <iframe id="pdf-frame" title="Score PDF"></iframe>
+            <div id="pdf-placeholder" class="placeholder">No PDF</div>
+          </div>
+        </div>
+        <div class="session-right">
+          <div class="session-info">
+            <h2 id="session-title"></h2>
+            <p id="session-context" class="muted"></p>
+            <p id="streak-display" class="streak">Streak: 0</p>
+          </div>
+          <div class="audio-section">
+            <audio id="audio-player" controls loop></audio>
+            <div id="audio-placeholder" class="placeholder muted">No audio</div>
+          </div>
+          <div class="recall-mode">
+            <label class="checkbox-label">
+              <input type="checkbox" id="recall-mode"> Recall mode (hide music & PDF periodically)
+            </label>
+            <div class="recall-inputs">
+              <label>Show (sec):</label>
+              <input type="number" id="recall-show" min="5" max="300" value="60">
+              <label>Hide (sec):</label>
+              <input type="number" id="recall-hide" min="5" max="120" value="30">
+            </div>
+          </div>
+          <div class="session-buttons">
+            <button id="btn-success" class="btn btn-success">Success</button>
+            <button id="btn-fail" class="btn btn-fail">Fail</button>
+            <button id="btn-end" class="btn btn-secondary">End Session</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script src="/static/app.js"></script>
+</body>
+</html>

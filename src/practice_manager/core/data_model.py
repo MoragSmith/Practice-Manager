@@ -10,7 +10,7 @@ import json
 import logging
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Iterable, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -94,14 +94,14 @@ def load(data_dir: Path) -> Dict[str, Any]:
     json_path = data_dir / "practice_status.json"
     if not json_path.exists():
         return create_empty_state()
-    
+
     try:
         with open(json_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
         logger.error("Invalid JSON in practice_status.json: %s", e)
         return create_empty_state()
-    
+
     # Normalize schema version
     data.setdefault("schema_version", SCHEMA_VERSION)
     data.setdefault("decay_rate_percent_per_day", DEFAULT_DECAY_RATE)
@@ -110,7 +110,7 @@ def load(data_dir: Path) -> Dict[str, Any]:
     data.setdefault("focus_set_ids", [])
     data.setdefault("show_focus_only", False)
     data.setdefault("items", {})
-    
+
     return data
 
 
@@ -123,12 +123,12 @@ def save(data: Dict[str, Any], data_dir: Path) -> None:
     """
     json_path = data_dir / "practice_status.json"
     data_dir.mkdir(parents=True, exist_ok=True)
-    
+
     data["last_updated"] = _now_iso()
     data["schema_version"] = SCHEMA_VERSION
-    
+
     _create_backup(json_path, data_dir)
-    
+
     with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
 
@@ -159,3 +159,44 @@ def set_item(
         last_score_updated=last_score_updated,
         missing=missing,
     )
+
+
+def expected_item_ids(discovered_sets: Iterable[Dict[str, Any]]) -> set[str]:
+    """Return the tune/part item IDs currently discoverable in the library.
+
+    Sets are intentionally excluded: they organize repertoire, but mastery and
+    practice state belong to tunes and parts.
+    """
+    expected: set[str] = set()
+    for set_rec in discovered_sets:
+        set_id = set_rec["set_id"]
+        for tune in set_rec.get("tunes", []):
+            expected.add(tune["tune_id"])
+        for part in set_rec.get("parts", []):
+            expected.add(part.get("part_full_id") or f"{set_id}|Parts|{part['part_id']}")
+    return expected
+
+
+def reconcile_missing_items(
+    data: Dict[str, Any],
+    discovered_sets: Iterable[Dict[str, Any]],
+) -> bool:
+    """Mark stored tune/part records missing when discovery no longer finds them.
+
+    The function also clears `missing` when an item reappears, preserving the
+    existing streak, score, and timestamps. It mutates `data` in place and
+    returns True when anything changed so callers can avoid unnecessary saves.
+    """
+    items = data.setdefault("items", {})
+    expected = expected_item_ids(discovered_sets)
+    changed = False
+
+    for item_id, rec in items.items():
+        if rec.get("type") not in ("tune", "part"):
+            continue
+        should_be_missing = item_id not in expected
+        if rec.get("missing", False) != should_be_missing:
+            rec["missing"] = should_be_missing
+            changed = True
+
+    return changed

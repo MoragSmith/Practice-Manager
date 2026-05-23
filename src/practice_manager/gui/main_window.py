@@ -25,9 +25,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from ..config import INSTRUMENTS, PART_LABELS
-from ..data_model import get_item, set_item
-from ..discovery import discover
+from ..core import INSTRUMENTS, PART_LABELS, discover, get_item, reconcile_missing_items, set_item
 
 
 class MainWindow(QMainWindow):
@@ -134,6 +132,7 @@ class MainWindow(QMainWindow):
     def _refresh_discovery(self) -> None:
         items = self._data.get("items", {})
         self._discovered = discover(self.library_root, self.data_dir, items)
+        changed = reconcile_missing_items(self._data, self._discovered)
         
         # Merge new tune and part items (sets are for organization only, no practice tracking)
         for set_rec in self._discovered:
@@ -142,10 +141,14 @@ class MainWindow(QMainWindow):
                 tid = t["tune_id"]
                 if tid not in items:
                     set_item(self._data, tid, "tune", 0, 0.0)
+                    changed = True
             for p in set_rec.get("parts", []):
                 pid = p.get("part_full_id") or f"{set_id}|Parts|{p['part_id']}"
                 if pid not in items:
                     set_item(self._data, pid, "part", 0, 0.0)
+                    changed = True
+        if changed:
+            self._on_save()
     
     def _refresh_sets_list(self) -> None:
         self.sets_list.clear()
@@ -165,11 +168,18 @@ class MainWindow(QMainWindow):
             mastered = sum(1 for iid in practiced if (items.get(iid) or {}).get("score", 0) >= 100)
             total = len(practiced)
             summary = f"{mastered}/{total}" if total else "—"
+            missing_count = sum(
+                1
+                for iid, rec in items.items()
+                if iid.startswith(f"{set_id}|") and rec.get("missing")
+            )
             
             label = set_rec["set_folder_name"]
             if is_focus:
                 label = "★ " + label
             label += f"  [{summary}]"
+            if missing_count:
+                label += f"  ({missing_count} missing)"
             
             item = QListWidgetItem(label)
             item.setData(Qt.UserRole, set_rec)
