@@ -1,3 +1,11 @@
+"""Web API regression tests.
+
+These tests use a tiny temporary OTPD Scores-style library instead of the real
+Google Drive library. That keeps write endpoints safe to test repeatedly while
+still exercising the same FastAPI routers, discovery logic, asset streaming,
+and practice-status persistence used by the web app.
+"""
+
 import json
 from pathlib import Path
 
@@ -8,11 +16,13 @@ from src.practice_manager.web.api import assets, library, practice, status
 
 
 def _write_json(path: Path, data: dict) -> None:
+    """Write JSON fixture data, creating the parent directory when needed."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data), encoding="utf-8")
 
 
 def _make_library(tmp_path: Path) -> Path:
+    """Create the smallest library shape that discovery and asset APIs expect."""
     root = tmp_path / "OTPD Scores"
     set_dir = root / "Section 1 - Test" / "Set 01 - Test Set"
     set_dir.mkdir(parents=True)
@@ -36,6 +46,11 @@ def _make_library(tmp_path: Path) -> Path:
 
 
 def _patch_library_root(monkeypatch, root: Path) -> None:
+    """Point every web router at the temporary library fixture.
+
+    The API modules import `get_library_root` directly, so patching the core
+    function alone would not affect already-imported router modules.
+    """
     for module in (assets, library, practice, status):
         monkeypatch.setattr(module, "get_library_root", lambda: root)
 

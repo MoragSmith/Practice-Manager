@@ -14,7 +14,13 @@ router = APIRouter()
 
 
 def _resolve_asset_path(path_param: str) -> Path:
-    """Resolve path param to absolute path within library. Raises if invalid."""
+    """Resolve a browser-provided library-relative path safely.
+
+    Asset URLs intentionally expose paths relative to the configured OTPD Scores
+    library. The final `is_relative_to` check is the important containment
+    guard: even if a path is encoded strangely, it must resolve inside the
+    library before FileResponse can stream it.
+    """
     try:
         library_root = get_library_root()
     except FileNotFoundError as e:

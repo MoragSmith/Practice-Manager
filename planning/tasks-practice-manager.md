@@ -17,6 +17,7 @@
 - [x] Smoke-test web read/static/library/status/asset flow against configured real library
 - [x] Smoke-test write flows with explicit backup/restore: start session, success/fail, reset part
 - [x] Add focused web/API tests for library/status/assets/practice flow
+- [x] Refresh README, operations docs, planning status, and web API comments
 - [ ] Decide merge readiness for `feature/operational-legibility-web-runtime`
 
 ## Recommended Next Slice
@@ -36,3 +37,4 @@
 - Shared environment repair completed on 2026-05-17: Python symlink repointed, corrupted PySide6/shiboken install cleaned and reinstalled, `bash scripts/env/run_tests.sh` now passes.
 - 2026-05-21 verification: configured library resolves to Google Drive OTPD Scores; discovery sees 98 sets and 264 tracked items. Standard tests pass (`61 passed, 1 skipped`). Web read smoke passes for `/`, `/api/status`, `/api/library`, `/api/library/sets/{set_id}`, and `/api/assets/pdf`. Reversible web write smoke passes for `/api/practice/start`, `/api/practice/success`, `/api/practice/fail`, and `/api/practice/reset`; original `practice_status.json` bytes were restored and smoke-generated backup was removed. Desktop headless initialization passes.
 - 2026-05-21 regression update: added isolated `tests/test_web_api.py`; full suite now passes with `64 passed, 1 skipped`.
+- 2026-05-23 documentation/comment pass: README and operations docs now describe current verification baseline; web API tests and path/session helpers include clarifying comments/docstrings.

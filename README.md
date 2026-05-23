@@ -6,6 +6,7 @@ Track mastery of bass (and other instrument) scores for OTPD repertoire. Content
 
 - Run desktop app: `python run.py`
 - Run web app: `python run_web.py`
+- Current planning/status: `planning/status.md`, `planning/prd-practice-manager.md`, `planning/tasks-practice-manager.md`
 - Canonical launch wrappers: `scripts/launch/`
 - Script boundary map: `scripts/README.md`
 - Machine-room operations guide: `docs/OPERATIONS.md`
@@ -53,7 +54,19 @@ Operational boundary notes:
 - Runtime practice state is stored in the OTPD Scores library, not in this repo:
   `OTPD Scores/#Script Resources/data/practice_status.json`
 - Local transient caches (`__pycache__/`, `.pytest_cache/`, `*.pyc`) are ignored
+- Generated Script Manager/Glyph refresh bundles (`.script-manager/`) are ignored; the human-facing planning snapshot lives in `planning/`
 - See `docs/OPERATIONS.md` for run/maintain guidance
+
+## Current Status
+
+As of the latest local verification pass, the core product is implemented for desktop and web:
+
+- Shared core, desktop UI, web API/frontend, Ensemble parts workflow, and deployment docs are present
+- Automated suite passes locally: `64 passed, 1 skipped`
+- Web API regression tests cover library/status reads, asset streaming/path containment, and practice start/success/fail/reset flow
+- Real-library smoke checks have passed against the configured Google Drive OTPD Scores library
+
+Remaining work is not core functionality; it is hardening and operational confidence: merge/integration decision, optional deployment proof, and automatic missing-item detection.
 
 ## Setup
 
@@ -198,6 +211,7 @@ Then follow `docs/ENV_REPAIR_CHECKLIST.md`.
 - **test_parts_organizer.py** – PartsOrganizer: prefix extraction, folder mapping, file moves with real tmp_path
 - **test_config.py** – Config: get_library_root and get_ensemble_config with real config files in tmp_path
 - **test_data_model.py**, **test_decay.py**, **test_discovery.py** – Data model, decay, discovery
+- **test_web_api.py** – Isolated FastAPI regression tests against a temporary OTPD Scores-style fixture
 - **tests/integration/test_ensemble_parts.py** – E2E against real Ensemble: login → Parts → download (requires ENSEMBLE_USERNAME, ENSEMBLE_PASSWORD, library root)
 
 Integration test is skipped if library root or Ensemble credentials are not configured.

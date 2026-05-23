@@ -7,6 +7,7 @@ This document defines operational boundaries for the `Practice Manager` reposito
 - Source code: `src/`
 - Tests: `tests/`
 - Human-facing documentation: `docs/`
+- Planning/status snapshot: `planning/`
 - Deployment assets: `deploy/`
 - Entrypoints: `run.py` (desktop), `run_web.py` (web)
 - Historical reference docs: `docs/archive/` (e.g. completed web migration plan)
@@ -36,6 +37,7 @@ These are local artifacts and are safe to ignore in version control:
 - root containment zones if created: `logs/`, `tmp/`, `runtime/`, `generated/`, `backup/`
 - common residue patterns: `*.log`, `*.tmp`, `*.bak`, `*.old`
 - OS junk: `.DS_Store`, `Thumbs.db` (listed in `.gitignore`; do not commit)
+- Script Manager/Glyph generated refresh bundles: `.script-manager/` (ignored)
 
 ## Launch and Operation
 
@@ -48,9 +50,26 @@ These are local artifacts and are safe to ignore in version control:
 - Script boundary map: `scripts/README.md`
 - Shared environment repair steps: `docs/ENV_REPAIR_CHECKLIST.md`
 
+## Verification Baseline
+
+Use the standardized runner before merge or deployment work:
+
+```bash
+bash scripts/env/run_tests.sh
+```
+
+Current expected result after the web API regression pass:
+
+```text
+64 passed, 1 skipped
+```
+
+The skipped test is the real Ensemble E2E path, which requires configured Ensemble credentials and library access.
+
 ## Maintenance Rules
 
 - Keep active source under `src/`
 - Keep docs under `docs/`
 - Keep deployment assets under `deploy/`
+- Keep planning state under `planning/`
 - Avoid adding runtime output, logs, caches, or temporary files to the repo root

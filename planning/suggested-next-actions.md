@@ -1,10 +1,10 @@
-# Suggested next actions (Glyph review)
+# Suggested next actions
 
-Derived from `.script-manager/glyph/next-actions.json` after request **`ac984a34-fbe9-4255-8143-de2545fbae46`**.
-**Generated:** 2026-05-16T18:15:38Z
+Reviewed against `planning/prd-practice-manager.md` and `planning/tasks-practice-manager.md`.
+**Updated:** 2026-05-23
 
-## From OpenClaw next-actions
+## Current next actions
 
-1. **Decide whether the web-runtime migration branch is ready for merge/integration** *(priority: high)* *(~30 min)*
+1. **Merge or open an integration PR for the verified web-runtime branch** *(priority: high)* *(~30 min)*
 2. **Prove the documented VM + rclone deployment path if cloud use is near-term** *(priority: medium)* *(~60 min)*
 3. **Implement automatic missing-item detection if library renames/removals are becoming common** *(priority: medium)* *(~45 min)*

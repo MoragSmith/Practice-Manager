@@ -4,7 +4,7 @@ Practice API - session start, success, fail.
 
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 from urllib.parse import quote
 
 from fastapi import APIRouter, HTTPException
@@ -45,7 +45,7 @@ class SuccessFailRequest(BaseModel):
     item_type: str
 
 
-def _get_context():
+def _get_context() -> tuple[Path, Path, dict[str, Any]]:
     """Get library_root, data_dir, data."""
     try:
         library_root = get_library_root()
@@ -85,7 +85,9 @@ def start_session(req: StartSessionRequest) -> dict:
         }
         pdf_path, wav_path = get_part_assets(pr, instrument)
     else:
-        # Resolve from discovery
+        # Resolve from discovery when the frontend submits only IDs/context.
+        # This keeps the API tolerant of thinner clients while still using the
+        # same asset-resolution rules as the desktop app.
         items = data.get("items", {})
         sets_list = discover(library_root, data_dir, items)
         for s in sets_list:
@@ -103,7 +105,8 @@ def start_session(req: StartSessionRequest) -> dict:
                         break
             break
 
-    # Persist instrument
+    # Persist both per-set instrument choice and the default focus instrument so
+    # browser and desktop sessions stay aligned around the same practice state.
     if set_id:
         si = dict(data.get("set_instruments", {}))
         si[set_id] = instrument
@@ -112,12 +115,14 @@ def start_session(req: StartSessionRequest) -> dict:
     set_item(data, item_id, item_type, 0, 0.0)
     save(data, data_dir)
 
-    def _rel(p):
+    def _rel(p: Optional[Path]) -> Optional[str]:
+        """Return a library-relative path only when the resolved asset exists."""
         if p and p.exists():
             return str(p.relative_to(library_root))
         return None
 
-    def _asset_url(base: str, path):
+    def _asset_url(base: str, path: Optional[Path]) -> Optional[str]:
+        """Build the streaming URL consumed by the browser practice session."""
         r = _rel(path)
         return f"/api/assets/{base}?path={quote(r)}" if r else None
 

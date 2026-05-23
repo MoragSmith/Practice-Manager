@@ -44,7 +44,6 @@ Help musicians track mastery of OTPD repertoire by set, tune, and part, with int
 ## Known Gaps
 - Missing-item detection exists in the schema/UI conceptually but is not yet implemented
 - Deployment remains documented rather than fully proven end-to-end in this repo
-- Deployment remains documented rather than fully proven end-to-end in this repo
 - `widgets.py` is an unused placeholder
 
 ## Immediate Next Steps
